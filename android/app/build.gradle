@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.suin.chartsignal'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.suin.chartsignal'
+        minSdk 24
+        targetSdk 34
+        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+
+    // 개인 설치용 서명 키 (같은 키로 서명해야 업데이트 설치가 됩니다)
+    signingConfigs {
+        release {
+            storeFile file('chartsignal.keystore')
+            storePassword 'chartsignal'
+            keyAlias 'chartsignal'
+            keyPassword 'chartsignal'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// 저장소 루트의 웹앱 파일을 APK 안에 넣습니다 (인터넷 없이 실행)
+tasks.register('copyWebApp', Copy) {
+    from(rootProject.file('../')) {
+        include 'index.html', 'icons/**'
+    }
+    into 'src/main/assets/www'
+}
+preBuild.dependsOn copyWebApp
