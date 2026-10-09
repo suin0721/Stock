@@ -37,11 +37,16 @@ android {
     }
 }
 
+android.sourceSets.main.assets.srcDirs += ["$buildDir/webapp"]
+
 // 저장소 루트의 웹앱 파일을 APK 안에 넣습니다 (인터넷 없이 실행)
-tasks.register('copyWebApp', Copy) {
-    from(rootProject.file('../')) {
+def copyWebApp = tasks.register('copyWebApp', Sync) {
+    from(rootProject.projectDir.parentFile) {
         include 'index.html', 'icons/**'
     }
-    into 'src/main/assets/www'
+    into "$buildDir/webapp/www"
+}
+tasks.matching { it.name.startsWith('merge') && it.name.endsWith('Assets') }.configureEach {
+    dependsOn copyWebApp
 }
 preBuild.dependsOn copyWebApp
