@@ -1,0 +1,33 @@
+name: Test data server
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/test-server.yml']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r server/requirements.txt
+      - name: Fetch KO and 005930 through the API
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "server")
+          from app import app
+          c = app.test_client()
+          for sym in ["KO", "005930"]:
+              r = c.get(f"/api/history?symbol={sym}&days=180")
+              d = r.get_json()
+              print(sym, r.status_code, d.get("symbol"), d.get("name"), d.get("currency"),
+                    len(d.get("bars", [])), d.get("bars", [{}])[-1] if d.get("bars") else d.get("error"))
+              assert r.status_code == 200 and len(d["bars"]) > 100, d
+          assert c.get("/").status_code == 200
+          print("OK")
+          PY

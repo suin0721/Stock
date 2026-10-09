@@ -1,22 +1,50 @@
 # 차트 시그널
 
 일봉·주봉 차트를 기술적 지표로 분석해 **매수 / 매도 방향**을 제안하는 웹앱(PWA)입니다.
-휴대폰 홈 화면에 설치하면 일반 앱처럼 쓸 수 있고, 오프라인에서도 열립니다.
+종목 코드를 입력하면 yfinance로 최근 180일 실제 시세를 가져와 차트를 그리고 분석합니다.
 
 ## 바로 쓰기
 
-GitHub Pages: **https://suin0721.github.io/stock/**
+- 웹: 아래 **데이터 서버**를 배포한 주소에서 바로 사용
+- 안드로이드 APK: [ChartSignal.apk](https://github.com/suin0721/Stock/releases/download/latest/ChartSignal.apk)
 
 ### 휴대폰에 앱으로 설치
-- **아이폰(Safari)**: 위 주소 열기 → 공유 버튼 → "홈 화면에 추가"
-- **안드로이드(Chrome)**: 위 주소 열기 → 메뉴(⋮) → "앱 설치" 또는 "홈 화면에 추가"
+- **아이폰(Safari)**: 서버 주소 열기 → 공유 버튼 → "홈 화면에 추가"
+- **안드로이드(Chrome)**: 서버 주소 열기 → 메뉴(⋮) → "앱 설치" 또는 "홈 화면에 추가"
 
 ## 사용법
-1. 증권사 HTS, 네이버 금융, 야후 파이낸스 등에서 **일봉 CSV**를 내려받습니다 (120거래일 이상 권장).
-2. 앱 하단에서 파일을 선택하거나 내용을 붙여넣고 **분석하기**를 누릅니다.
-3. 주봉은 일봉에서 자동으로 만들어집니다. 마지막으로 분석한 종목은 다음에 열 때 자동으로 불러옵니다.
+1. 앱 상단에 종목 코드를 입력하고 **불러오기**를 누릅니다.
+   - 미국 주식: 티커 (`KO`, `AAPL`, `NVDA`)
+   - 한국 주식: 6자리 코드 (`005930`) → 코스피(.KS), 코스닥(.KQ) 순서로 자동 조회
+2. 데이터 서버가 **yfinance**로 최근 180일 일봉을 가져오고, 주봉은 앱에서 자동으로 만듭니다.
+3. 화면이 켜져 있는 동안 1분마다 자동 갱신됩니다. 시세는 Yahoo Finance 기준이며 수 분~20분 지연될 수 있습니다.
 
-인식하는 열 이름: `Date, Open, High, Low, Close, Volume` 또는 `날짜, 시가, 고가, 저가, 종가, 거래량` (UTF-8, EUC-KR 모두 지원)
+## 데이터 서버 (yfinance)
+
+yfinance는 Python 라이브러리라서 휴대폰·브라우저 안에서 직접 실행할 수 없습니다.
+그래서 `server/app.py`(Flask + yfinance)가 시세를 받아 JSON으로 넘겨주고, 앱 화면도 함께 제공합니다.
+
+### Render에 무료 배포 (권장)
+1. [render.com](https://render.com) 가입 → GitHub 계정 연결
+2. **New → Blueprint** → `suin0721/Stock` 선택 → **Apply** (`render.yaml` 설정이 자동 적용됨)
+3. 배포가 끝나면 나오는 주소(예: `https://chart-signal.onrender.com`)를 휴대폰에서 열면 바로 앱이 동작합니다.
+4. APK나 GitHub Pages에서 쓸 때는 앱 하단 **데이터 서버 설정**에 위 주소를 넣고 저장하세요.
+
+무료 서버는 15분간 요청이 없으면 잠들어서, 처음 열 때 30초~1분 정도 걸릴 수 있습니다.
+
+### 내 PC에서 실행
+```bash
+pip install -r server/requirements.txt
+python server/app.py      # http://localhost:8000
+```
+
+### API
+`GET /api/history?symbol=KO&days=180`
+```json
+{ "symbol": "KO", "name": "Coca-Cola Company (The)", "currency": "USD",
+  "source": "Yahoo Finance (yfinance)", "fetchedAt": "2026-10-10T00:00:00+00:00",
+  "bars": [{ "t": "2026-04-13", "o": 70.1, "h": 70.9, "l": 69.8, "c": 70.5, "v": 12345678 }] }
+```
 
 ## 분석 방식
 
@@ -30,7 +58,8 @@ GitHub Pages: **https://suin0721.github.io/stock/**
 손절 참고가는 가까운 지지선에서 ATR(14) 1배를 뺀 값입니다.
 
 ## 파일 구성
-- `index.html` — 앱 전체 (외부 라이브러리 없음, 차트는 Canvas로 직접 그림)
+- `index.html` — 앱 화면 (차트는 Canvas로 직접 그림)
+- `server/` — yfinance 데이터 서버 (Flask), `render.yaml` — Render 배포 설정
 - `manifest.webmanifest`, `sw.js`, `icons/` — 설치형 앱(PWA) 설정
 
 ## 주의

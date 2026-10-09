@@ -83,11 +83,21 @@ textarea{width:100%;min-height:110px;font-family:var(--mono);font-size:.8rem;bor
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#1b1408}
 .btn:hover{border-color:var(--ink)}
 input[type=file]{font-size:.85rem;color:var(--muted);max-width:100%}
-input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:.88rem;min-width:0;width:12rem}
+input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:.88rem;min-width:0;width:12rem}
 .msg{font-size:.85rem;color:var(--muted)}
 .msg.err{color:var(--up)}
 .note{font-size:.78rem;color:var(--muted);margin:0}
-.sample{background:var(--accent);color:#1b1408;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:4px}
+.livechip{font-size:.75rem;font-weight:700;color:var(--up)}
+.search{display:grid;gap:10px}
+.symbol{flex:1 1 10rem;font-size:1.05rem;text-transform:uppercase;width:auto!important}
+.quick{gap:6px}
+.chipbtn{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:4px 10px;font:inherit;font-size:.78rem;cursor:pointer}
+.chipbtn:hover,.chipbtn:focus-visible{color:var(--ink);border-color:var(--ink);outline:none}
+.settings summary{cursor:pointer}
+.settings{display:grid;gap:10px}
+.settings[open]{gap:10px}
+#server{flex:1 1 14rem;width:auto}
+.btn:disabled{opacity:.55;cursor:wait}
 </style>
 </head>
 <body>
@@ -98,8 +108,25 @@ input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px 10px
       <h1>차트 시그널 <span id="name" class="sub"></span></h1>
       <div class="sub">일봉으로 타이밍을, 주봉으로 추세를 읽어 매수·매도 방향을 제안합니다</div>
     </div>
-    <span id="sampleTag" class="sample">예시 데이터</span>
+    <span id="live" class="livechip" hidden>● 실시간</span>
   </header>
+
+  <form class="panel search" id="searchForm" autocomplete="off">
+    <label class="label" for="symbol">종목 코드</label>
+    <div class="row">
+      <input type="text" id="symbol" class="symbol mono" placeholder="KO, AAPL, 005930" aria-describedby="msg" spellcheck="false" autocapitalize="characters">
+      <button class="btn primary" id="go" type="submit">불러오기</button>
+      <button class="btn" id="refresh" type="button" title="지금 다시 불러오기">새로고침</button>
+    </div>
+    <div class="row quick" aria-label="빠른 선택">
+      <button type="button" class="chipbtn" data-s="KO">KO 코카콜라</button>
+      <button type="button" class="chipbtn" data-s="AAPL">AAPL 애플</button>
+      <button type="button" class="chipbtn" data-s="NVDA">NVDA 엔비디아</button>
+      <button type="button" class="chipbtn" data-s="005930">005930 삼성전자</button>
+      <button type="button" class="chipbtn" data-s="000660">000660 SK하이닉스</button>
+    </div>
+    <div id="msg" class="msg" role="status"></div>
+  </form>
 
   <section class="panel verdict" aria-live="polite">
     <div class="call">
@@ -136,20 +163,15 @@ input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px 10px
     <canvas id="cv" class="cv" aria-label="캔들 차트"></canvas>
   </section>
 
-  <section class="panel input">
-    <div class="label">내 종목 데이터 불러오기</div>
-    <p class="note">일봉 CSV를 올리거나 붙여넣으세요. 주봉은 자동으로 만들어집니다. 열 이름은 <span class="mono">Date, Open, High, Low, Close, Volume</span> 또는 <span class="mono">날짜, 시가, 고가, 저가, 종가, 거래량</span>을 인식합니다. 최소 120거래일 이상 권장. 증권사 HTS·네이버/야후 금융에서 내려받은 파일을 그대로 쓸 수 있습니다.</p>
+  <details class="panel settings" id="settings">
+    <summary class="label">데이터 서버 설정</summary>
+    <p class="note">시세는 yfinance(Yahoo Finance)로 최근 180일 일봉을 가져옵니다. 미국 주식은 티커(KO), 한국 주식은 6자리 코드(005930)로 입력하세요. 장중에는 1분마다 자동으로 갱신되며, Yahoo 기준으로 수 분~20분 지연될 수 있습니다.</p>
     <div class="row">
-      <input type="text" id="ticker" placeholder="종목명 (선택)" aria-label="종목명">
-      <input type="file" id="file" accept=".csv,text/csv,.txt">
+      <input type="url" id="server" class="mono" placeholder="https://chart-signal.onrender.com" aria-label="데이터 서버 주소" spellcheck="false">
+      <button class="btn" id="saveServer" type="button">저장</button>
     </div>
-    <textarea id="paste" placeholder="Date,Open,High,Low,Close,Volume&#10;2026-01-02,71200,72500,70800,72100,15230000&#10;..."></textarea>
-    <div class="row">
-      <button class="btn primary" id="analyze">분석하기</button>
-      <button class="btn" id="loadSample">예시 데이터로 보기</button>
-      <span id="msg" class="msg"></span>
-    </div>
-  </section>
+    <p class="note" id="srcinfo"></p>
+  </details>
 
   <p class="note">이 도구는 이동평균·RSI·MACD·볼린저밴드·거래량 같은 기술적 지표를 규칙에 따라 점수화한 참고 자료입니다. 실적·뉴스·수급은 반영하지 않으며 투자 권유가 아닙니다. 최종 판단과 책임은 본인에게 있습니다.</p>
 </div>
@@ -166,24 +188,6 @@ function atr(b,n=14){const tr=b.map((x,i)=>i===0?x.h-x.l:Math.max(x.h-x.l,Math.a
 
 // ---------- data ----------
 function toWeekly(d){const m=new Map();for(const b of d){const dt=new Date(b.t+"T00:00:00");const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);const k=dt.toISOString().slice(0,10);const w=m.get(k);if(!w)m.set(k,{t:b.t,o:b.o,h:b.h,l:b.l,c:b.c,v:b.v});else{w.h=Math.max(w.h,b.h);w.l=Math.min(w.l,b.l);w.c=b.c;w.v+=b.v;w.tEnd=b.t}}return[...m.values()]}
-function splitCSV(line){const out=[];let cur="",q=false;for(const ch of line){if(ch=='"'){q=!q}else if((ch===","||ch==="\t"||ch===";")&&!q){out.push(cur);cur=""}else cur+=ch}out.push(cur);return out.map(s=>s.trim())}
-function parseCSV(text){
-  const lines=text.trim().split(/\r?\n/).filter(l=>l.trim());if(lines.length<2)throw new Error("데이터 줄이 부족합니다. 헤더와 데이터 행을 함께 넣어주세요.");
-  const head=splitCSV(lines[0]).map(h=>h.toLowerCase().replace(/[\s"]/g,""));
-  const find=(...keys)=>head.findIndex(h=>keys.some(k=>h===k||h.includes(k)));
-  const idx={t:find("date","날짜","일자"),o:find("open","시가"),h:find("high","고가"),l:find("low","저가"),c:find("adjclose","close","종가","현재가"),v:find("volume","거래량")};
-  if(head.includes("close")&&head.includes("adjclose"))idx.c=head.indexOf("close");
-  const miss=Object.entries({t:"날짜",o:"시가",h:"고가",l:"저가",c:"종가"}).filter(([k])=>idx[k]<0).map(([,v])=>v);
-  if(miss.length)throw new Error("다음 열을 찾지 못했습니다: "+miss.join(", ")+". 첫 줄의 열 이름을 확인해주세요.");
-  const num=s=>{const n=parseFloat(String(s||"").replace(/[,\s원$]/g,""));return isFinite(n)?n:NaN};
-  const normDate=s=>{s=String(s).replace(/[."\s]/g,m=>m==="."?"-":"").replace(/\//g,"-");if(/^\d{8}$/.test(s))s=s.slice(0,4)+"-"+s.slice(4,6)+"-"+s.slice(6);const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`:null};
-  const rows=[];for(const ln of lines.slice(1)){const c=splitCSV(ln);const t=normDate(c[idx.t]);const b={t,o:num(c[idx.o]),h:num(c[idx.h]),l:num(c[idx.l]),c:num(c[idx.c]),v:idx.v>=0?num(c[idx.v])||0:0};if(t&&[b.o,b.h,b.l,b.c].every(isFinite)&&b.c>0)rows.push(b)}
-  rows.sort((a,b)=>a.t<b.t?-1:1);
-  if(rows.length<60)throw new Error(`유효한 행이 ${rows.length}개입니다. 최소 60거래일(권장 120일 이상)이 필요합니다.`);
-  return rows;
-}
-function sampleData(){let s=7;const r=()=>{s=(s*16807)%2147483647;return s/2147483647};const out=[];let p=68000;const d=new Date("2025-06-02T00:00:00");
-  while(out.length<320){if(d.getDay()%6!==0){const n=out.length;const drift=n<120?0.0012:n<210?-0.0016:n<290?0.0019:-0.0009;const ch=drift+(r()-.5)*0.034;const o=p*(1+(r()-.5)*0.01);const c=o*(1+ch);const h=Math.max(o,c)*(1+r()*0.012),l=Math.min(o,c)*(1-r()*0.012);const v=Math.round(9e6*(0.6+r()*0.9)*(1+Math.abs(ch)*25));const rd=x=>Math.round(x/100)*100;out.push({t:d.toISOString().slice(0,10),o:rd(o),h:rd(h),l:rd(l),c:rd(c),v});p=c}d.setDate(d.getDate()+1)}return out}
 
 // ---------- analysis ----------
 function analyze(b,weekly){
@@ -221,10 +225,10 @@ const fmt=x=>x==null||!isFinite(x)?"—":(x>=1000?Math.round(x).toLocaleString("
 // ---------- render ----------
 let state={d:[],w:[],da:null,wa:null,tf:"d"};
 const $=id=>document.getElementById(id);
-function run(daily,label,isSample){
+function run(daily,label){
   const weekly=toWeekly(daily);const da=analyze(daily,false),wa=analyze(weekly,true);state={d:daily,w:weekly,da,wa,tf:state.tf};
   const total=wa.score*0.6+da.score*0.4;const last=daily[daily.length-1];
-  $("name").textContent=label?"· "+label:"";$("sampleTag").hidden=!isSample;$("asof").textContent=last.t+" 기준";
+  $("name").textContent=label?"· "+label:"";$("asof").textContent=last.t+" 기준";
   const cw=$("callword");cw.textContent=word(total);cw.className="callword "+cls(total);
   $("needle").style.left=((total+100)/2)+"%";
   $("wScore").textContent=(wa.score>0?"+":"")+wa.score.toFixed(0);$("wScore").className="mono "+cls(wa.score);$("wWord").textContent=word(wa.score);
@@ -303,15 +307,49 @@ new ResizeObserver(()=>draw()).observe(cv);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
 new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 
-// ---------- input ----------
+// ---------- data (yfinance 서버) ----------
 const msg=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")};
-const KEY="chartSignal.last";
-function fromText(t){try{const rows=parseCSV(t);run(rows,$("ticker").value.trim(),false);try{localStorage.setItem(KEY,JSON.stringify({t,name:$("ticker").value.trim()}))}catch(_){}msg(`${rows.length}거래일 분석 완료 (${rows[0].t} ~ ${rows[rows.length-1].t})`);window.scrollTo({top:0,behavior:"smooth"})}catch(e){msg(e.message,true)}}
-$("analyze").onclick=()=>{const t=$("paste").value;if(!t.trim()){msg("CSV를 붙여넣거나 파일을 선택해주세요.",true);return}fromText(t)};
-$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;if(!$("ticker").value)$("ticker").value=f.name.replace(/\.[^.]+$/,"");const r=new FileReader();r.onload=()=>{let t=r.result;if(t.includes(String.fromCharCode(0xFFFD))){const r2=new FileReader();r2.onload=()=>fromText(r2.result);r2.readAsText(f,"euc-kr");return}fromText(t)};r.readAsText(f,"utf-8")};
-$("loadSample").onclick=()=>{run(sampleData(),"",true);msg("예시 데이터를 불러왔습니다.")};
-let restored=false;try{const saved=JSON.parse(localStorage.getItem(KEY)||"null");if(saved&&saved.t){$("ticker").value=saved.name||"";$("paste").value=saved.t;run(parseCSV(saved.t),saved.name||"",false);msg("마지막으로 분석한 종목을 불러왔습니다.");restored=true}}catch(_){}
-if(!restored)run(sampleData(),"",true);
+const LS={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(_){}}};
+const DEFAULT_SERVER="https://chart-signal.onrender.com";
+const sameOrigin=/^https?:$/.test(location.protocol)&&!/github\.io$/.test(location.hostname);
+function apiBase(){const s=(LS.get("chartSignal.server")||"").trim().replace(/\/+$/,"");if(s)return s;return sameOrigin?location.origin:DEFAULT_SERVER}
+$("server").value=LS.get("chartSignal.server")||"";$("server").placeholder=sameOrigin?location.origin+" (현재 주소)":DEFAULT_SERVER;
+$("saveServer").onclick=()=>{LS.set("chartSignal.server",$("server").value.trim());msg("서버 주소를 저장했습니다.");if(current)load(current)};
+let current=null,loading=false,timer=null;
+async function load(sym,{silent=false}={}){
+  sym=String(sym||"").trim().toUpperCase();if(!sym){msg("종목 코드를 입력해주세요. 예: KO, AAPL, 005930",true);return}
+  if(loading)return;loading=true;$("go").disabled=$("refresh").disabled=true;if(!silent)msg(`${sym} 시세를 가져오는 중…`);
+  try{
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),45000);
+    const res=await fetch(`${apiBase()}/api/history?symbol=${encodeURIComponent(sym)}&days=180&_=${Date.now()}`,{signal:ctl.signal,cache:"no-store"});clearTimeout(to);
+    let data;try{data=await res.json()}catch(_){throw new Error("서버 응답을 읽지 못했습니다.")}
+    if(!res.ok||data.error)throw new Error(data.error||`서버 오류 (${res.status})`);
+    if(!data.bars||data.bars.length<30)throw new Error(`${sym}: 데이터가 ${data.bars?data.bars.length:0}일뿐이라 분석할 수 없습니다.`);
+    current=sym;LS.set("chartSignal.symbol",sym);LS.set("chartSignal.cache",JSON.stringify(data));show(data,false);
+    if(!silent&&window.scrollY>200)window.scrollTo({top:0,behavior:"smooth"});
+  }catch(e){
+    const why=e.name==="AbortError"?"서버 응답이 너무 늦습니다. 무료 서버는 처음 깨어날 때 30초~1분 걸릴 수 있으니 잠시 후 다시 눌러주세요.":/Failed to fetch|NetworkError|Load failed/i.test(e.message)?`데이터 서버(${apiBase()})에 연결하지 못했습니다. 인터넷 연결이나 아래 '데이터 서버 설정' 주소를 확인해주세요.`:e.message;
+    msg(why,true);if(!silent)$("settings").open=/연결하지 못했습니다/.test(why);
+  }finally{loading=false;$("go").disabled=$("refresh").disabled=false}
+}
+function show(data,fromCache){
+  const bars=data.bars.map(b=>({t:b.t,o:+b.o,h:+b.h,l:+b.l,c:+b.c,v:+b.v||0}));
+  const label=`${data.name&&data.name!==data.symbol?data.name+" ":""}(${data.symbol})${data.currency?" · "+data.currency:""}`;
+  run(bars,label);$("symbol").value=data.symbol.replace(/\.(KS|KQ)$/,"");
+  const fetched=new Date(data.fetchedAt);const ft=isNaN(fetched)?"":fetched.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  $("live").hidden=fromCache;
+  msg(fromCache?`저장된 데이터 표시 중 (${ft} 기준). 새로고침을 눌러 최신 시세를 받으세요.`:`최근 180일 · ${bars.length}거래일 (${bars[0].t} ~ ${bars[bars.length-1].t}) · ${ft} 갱신`);
+  $("srcinfo").textContent=`출처: ${data.source||"Yahoo Finance"} · 서버: ${apiBase()}`;
+}
+$("searchForm").onsubmit=e=>{e.preventDefault();load($("symbol").value)};
+$("refresh").onclick=()=>load(current||$("symbol").value);
+document.querySelectorAll(".chipbtn").forEach(b=>b.onclick=()=>{$("symbol").value=b.dataset.s;load(b.dataset.s)});
+// 화면이 보이는 동안 1분마다 자동 갱신
+function startAuto(){clearInterval(timer);timer=setInterval(()=>{if(current&&document.visibilityState==="visible")load(current,{silent:true})},60000)}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&current)load(current,{silent:true})});
+// 시작: 저장된 데이터를 먼저 보여주고 최신 시세를 가져옴
+try{const c=JSON.parse(LS.get("chartSignal.cache")||"null");if(c&&c.bars&&c.bars.length>=30)show(c,true)}catch(_){}
+const first=LS.get("chartSignal.symbol")||"KO";$("symbol").value=first;load(first);startAuto();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>

@@ -1,0 +1,9 @@
+# Render(render.com) 무료 웹 서비스 배포 설정
+services:
+  - type: web
+    name: chart-signal
+    runtime: python
+    plan: free
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: gunicorn --chdir server app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/health

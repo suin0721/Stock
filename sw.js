@@ -1,5 +1,5 @@
 // 오프라인에서도 앱이 열리도록 핵심 파일을 캐시합니다.
-const CACHE = "chart-signal-v1";
+const CACHE = "chart-signal-v2";
 const ASSETS = [
   "./",
   "./index.html",
