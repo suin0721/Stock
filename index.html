@@ -88,6 +88,39 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
 .msg.err{color:var(--up)}
 .note{font-size:.78rem;color:var(--muted);margin:0}
 .livechip{font-size:.75rem;font-weight:700;color:var(--up)}
+.headright{display:flex;align-items:center;gap:10px}
+.starbtn{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:5px 12px;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.starbtn[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.starbtn:hover{border-color:var(--ink)}
+.starbtn:focus-visible,.wrow:focus-visible,.wx:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.watch{display:grid;gap:10px}
+.whead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.whead .row{gap:6px}
+.wcount{font-family:var(--mono);color:var(--ink);margin-left:4px}
+select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 8px;font:inherit;font-size:.82rem}
+.btn.sm{padding:6px 10px;font-size:.82rem}
+.wlist{list-style:none;margin:0;padding:0;display:grid}
+.wlist li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;border-top:1px solid var(--line)}
+.wlist li:first-child{border-top:0}
+.wrow{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) 64px 6.2rem 5.2rem;gap:10px;align-items:center;padding:10px 6px;border-radius:8px;min-width:0}
+.wrow:hover{background:var(--bg)}
+.wlist li.on .wrow{background:var(--bg)}
+.wlist li.on .wname b{color:var(--accent)}
+.wname{min-width:0;display:grid}
+.wname b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wname span{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.wspark{width:64px;height:26px;display:block}
+.wspark polyline{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.wpx{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;display:grid}
+.wpx b{font-size:.92rem;font-weight:600}
+.wpx span{font-size:.78rem}
+.wv{justify-self:end;text-align:center;min-width:4.6rem}
+.wv small{display:block;font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-top:2px}
+.wx{all:unset;cursor:pointer;color:var(--muted);font-size:1.1rem;line-height:1;padding:8px 10px;border-radius:6px}
+.wx:hover{color:var(--ink);background:var(--bg)}
+.wempty{color:var(--muted);font-size:.88rem;margin:0;padding-block:6px}
+.wstat{font-size:.78rem;color:var(--muted)}
+@media (max-width:460px){.wrow{grid-template-columns:minmax(0,1fr) 5.6rem 4.8rem;gap:8px}.wspark{display:none}.wv{min-width:4.2rem}}
 .search{display:grid;gap:10px}
 .symbol{flex:1 1 10rem;font-size:1.05rem;text-transform:uppercase;width:auto!important}
 .quick{gap:6px}
@@ -108,7 +141,10 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
       <h1>차트 시그널 <span id="name" class="sub"></span></h1>
       <div class="sub">일봉으로 타이밍을, 주봉으로 추세를 읽어 매수·매도 방향을 제안합니다</div>
     </div>
-    <span id="live" class="livechip" hidden>● 실시간</span>
+    <div class="headright">
+      <span id="live" class="livechip" hidden>● 실시간</span>
+      <button type="button" id="star" class="starbtn" aria-pressed="false" hidden>☆ 관심종목 추가</button>
+    </div>
   </header>
 
   <form class="panel search" id="searchForm" autocomplete="off">
@@ -127,6 +163,23 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
     </div>
     <div id="msg" class="msg" role="status"></div>
   </form>
+
+  <section class="panel watch" id="watch" aria-labelledby="wtitle">
+    <div class="whead">
+      <div class="label" id="wtitle">관심종목<span class="wcount" id="wcount"></span></div>
+      <div class="row">
+        <select id="wsort" class="wsort" aria-label="정렬">
+          <option value="added">추가순</option>
+          <option value="score">판정 점수순</option>
+          <option value="chg">등락률순</option>
+        </select>
+        <button type="button" class="btn sm" id="wrefresh">전체 새로고침</button>
+      </div>
+    </div>
+    <ul class="wlist" id="wlist"></ul>
+    <p class="wempty" id="wempty">아직 담은 종목이 없습니다. 종목을 불러온 뒤 오른쪽 위 <b>☆ 관심종목 추가</b>를 누르면 여기에 모이고, 종목마다 현재가와 매수·매도 판정을 한눈에 볼 수 있습니다.</p>
+    <div class="wstat" id="wstat"></div>
+  </section>
 
   <section class="panel verdict" aria-live="polite">
     <div class="call">
@@ -225,9 +278,10 @@ const fmt=x=>x==null||!isFinite(x)?"—":(x>=1000?Math.round(x).toLocaleString("
 // ---------- render ----------
 let state={d:[],w:[],da:null,wa:null,tf:"d"};
 const $=id=>document.getElementById(id);
+function evaluate(daily){const weekly=toWeekly(daily);const da=analyze(daily,false),wa=analyze(weekly,true);return{weekly,da,wa,total:wa.score*0.6+da.score*0.4}}
 function run(daily,label){
-  const weekly=toWeekly(daily);const da=analyze(daily,false),wa=analyze(weekly,true);state={d:daily,w:weekly,da,wa,tf:state.tf};
-  const total=wa.score*0.6+da.score*0.4;const last=daily[daily.length-1];
+  const {weekly,da,wa,total}=evaluate(daily);state={d:daily,w:weekly,da,wa,tf:state.tf};
+const last=daily[daily.length-1];
   $("name").textContent=label?"· "+label:"";$("asof").textContent=last.t+" 기준";
   const cw=$("callword");cw.textContent=word(total);cw.className="callword "+cls(total);
   $("needle").style.left=((total+100)/2)+"%";
@@ -316,26 +370,103 @@ function apiBase(){const s=(LS.get("chartSignal.server")||"").trim().replace(/\/
 $("server").value=LS.get("chartSignal.server")||"";$("server").placeholder=sameOrigin?location.origin+" (현재 주소)":DEFAULT_SERVER;
 $("saveServer").onclick=()=>{LS.set("chartSignal.server",$("server").value.trim());msg("서버 주소를 저장했습니다.");if(current)load(current)};
 let current=null,loading=false,timer=null;
-async function load(sym,{silent=false}={}){
-  sym=String(sym||"").trim().toUpperCase();if(!sym){msg("종목 코드를 입력해주세요. 예: KO, AAPL, 005930",true);return}
-  if(loading)return;loading=true;$("go").disabled=$("refresh").disabled=true;if(!silent)msg(`${sym} 시세를 가져오는 중…`);
+const toBars=data=>data.bars.map(b=>({t:b.t,o:+b.o,h:+b.h,l:+b.l,c:+b.c,v:+b.v||0}));
+async function fetchData(sym){
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),45000);
   try{
-    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),45000);
-    const res=await fetch(`${apiBase()}/api/history?symbol=${encodeURIComponent(sym)}&days=180&_=${Date.now()}`,{signal:ctl.signal,cache:"no-store"});clearTimeout(to);
+    const res=await fetch(`${apiBase()}/api/history?symbol=${encodeURIComponent(sym)}&days=180&_=${Date.now()}`,{signal:ctl.signal,cache:"no-store"});
     let data;try{data=await res.json()}catch(_){throw new Error("서버 응답을 읽지 못했습니다.")}
     if(!res.ok||data.error)throw new Error(data.error||`서버 오류 (${res.status})`);
     if(!data.bars||data.bars.length<30)throw new Error(`${sym}: 데이터가 ${data.bars?data.bars.length:0}일뿐이라 분석할 수 없습니다.`);
+    return data;
+  }finally{clearTimeout(to)}
+}
+const errText=e=>e.name==="AbortError"?"서버 응답이 너무 늦습니다. 무료 서버는 처음 깨어날 때 30초~1분 걸릴 수 있으니 잠시 후 다시 눌러주세요.":/Failed to fetch|NetworkError|Load failed/i.test(e.message)?`데이터 서버(${apiBase()})에 연결하지 못했습니다. 인터넷 연결이나 아래 '데이터 서버 설정' 주소를 확인해주세요.`:e.message;
+async function load(sym,{silent=false}={}){
+  sym=String(sym||"").trim().toUpperCase().replace(/\.(KS|KQ)$/,"");if(!sym){msg("종목 코드를 입력해주세요. 예: KO, AAPL, 005930",true);return}
+  if(loading)return;loading=true;$("go").disabled=$("refresh").disabled=true;if(!silent)msg(`${sym} 시세를 가져오는 중…`);
+  try{
+    const data=await fetchData(sym);
     current=sym;LS.set("chartSignal.symbol",sym);LS.set("chartSignal.cache",JSON.stringify(data));show(data,false);
+    if(isWatched(sym))updateWatch(sym,data);
     if(!silent&&window.scrollY>200)window.scrollTo({top:0,behavior:"smooth"});
   }catch(e){
-    const why=e.name==="AbortError"?"서버 응답이 너무 늦습니다. 무료 서버는 처음 깨어날 때 30초~1분 걸릴 수 있으니 잠시 후 다시 눌러주세요.":/Failed to fetch|NetworkError|Load failed/i.test(e.message)?`데이터 서버(${apiBase()})에 연결하지 못했습니다. 인터넷 연결이나 아래 '데이터 서버 설정' 주소를 확인해주세요.`:e.message;
-    msg(why,true);if(!silent)$("settings").open=/연결하지 못했습니다/.test(why);
-  }finally{loading=false;$("go").disabled=$("refresh").disabled=false}
+    const why=errText(e);msg(why,true);if(!silent)$("settings").open=/연결하지 못했습니다/.test(why);
+  }finally{loading=false;$("go").disabled=$("refresh").disabled=false;renderStar()}
 }
+
+// ---------- 관심종목 ----------
+const WKEY="chartSignal.watch";
+let watch=[];try{watch=JSON.parse(LS.get(WKEY)||"[]");if(!Array.isArray(watch))watch=[]}catch(_){watch=[]}
+let currentName="";
+const saveWatch=()=>LS.set(WKEY,JSON.stringify(watch));
+const isWatched=sym=>watch.some(w=>w.sym===sym);
+function summarize(sym,data){
+  const bars=toBars(data);const n=bars.length-1;const {total}=evaluate(bars);
+  return{sym,symbol:data.symbol,name:data.name&&data.name!==data.symbol?data.name:"",currency:data.currency||"",
+    price:bars[n].c,chg:n>0?(bars[n].c/bars[n-1].c-1)*100:0,score:total,date:bars[n].t,
+    spark:bars.slice(-30).map(b=>b.c),at:data.fetchedAt||new Date().toISOString(),err:""};
+}
+function updateWatch(sym,data){const i=watch.findIndex(w=>w.sym===sym);if(i<0)return;watch[i]={...watch[i],...summarize(sym,data)};saveWatch();renderWatch()}
+function toggleStar(){
+  if(!current)return;
+  if(isWatched(current)){watch=watch.filter(w=>w.sym!==current);msg(`${current}을(를) 관심종목에서 뺐습니다.`)}
+  else{
+    let entry={sym:current,name:currentName,added:Date.now()};
+    try{const c=JSON.parse(LS.get("chartSignal.cache")||"null");if(c&&c.symbol&&c.symbol.replace(/\.(KS|KQ)$/,"")===current)entry={...entry,...summarize(current,c)}}catch(_){}
+    watch.push(entry);msg(`${current}을(를) 관심종목에 담았습니다.`);
+  }
+  saveWatch();renderStar();renderWatch();
+}
+function renderStar(){const b=$("star");b.hidden=!current;const on=!!current&&isWatched(current);b.setAttribute("aria-pressed",on);b.textContent=on?"★ 관심종목":"☆ 관심종목 추가"}
+function spark(vals){
+  if(!vals||vals.length<2)return"";const lo=Math.min(...vals),hi=Math.max(...vals),r=hi-lo||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*62+1).toFixed(1)},${(24-(v-lo)/r*22).toFixed(1)}`).join(" ");
+  return`<svg class="wspark ${vals[vals.length-1]>=vals[0]?"pos":"neg"}" viewBox="0 0 64 26" aria-hidden="true"><polyline points="${pts}"/></svg>`;
+}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function renderWatch(){
+  const sort=$("wsort").value;let list=watch.slice();
+  if(sort==="score")list.sort((a,b)=>(b.score??-999)-(a.score??-999));
+  else if(sort==="chg")list.sort((a,b)=>(b.chg??-999)-(a.chg??-999));
+  $("wcount").textContent=watch.length?` ${watch.length}`:"";
+  $("wempty").hidden=watch.length>0;$("wsort").hidden=$("wrefresh").hidden=watch.length===0;
+  $("wlist").innerHTML=list.map(w=>{
+    const has=w.price!=null;const sc=w.score??0;
+    const px=has?`<b>${fmt(w.price)}</b><span class="${w.chg>0?"pos":w.chg<0?"neg":"neu"}">${w.chg>0?"▲":w.chg<0?"▼":""}${Math.abs(w.chg).toFixed(2)}%</span>`:`<b>—</b><span class="neu">${w.err?"오류":"대기"}</span>`;
+    const v=has?`<span class="chip ${cls(sc)}">${word(sc)}</span><small>${sc>0?"+":""}${sc.toFixed(0)}</small>`:`<span class="chip neu">—</span>`;
+    return`<li class="${w.sym===current?"on":""}" title="${esc(w.err||"")}"><button type="button" class="wrow" data-sym="${esc(w.sym)}" aria-label="${esc(w.name||w.sym)} 열기">
+      <span class="wname"><b>${esc(w.name||w.sym)}</b><span>${esc(w.sym)}${w.currency?" · "+esc(w.currency):""}</span></span>
+      ${spark(w.spark)||'<span class="wspark"></span>'}<span class="wpx">${px}</span><span class="wv">${v}</span></button>
+      <button type="button" class="wx" data-del="${esc(w.sym)}" aria-label="${esc(w.sym)} 관심종목에서 빼기">×</button></li>`}).join("");
+}
+$("wlist").addEventListener("click",e=>{
+  const del=e.target.closest("[data-del]");if(del){watch=watch.filter(w=>w.sym!==del.dataset.del);saveWatch();renderWatch();renderStar();return}
+  const row=e.target.closest("[data-sym]");if(row){$("symbol").value=row.dataset.sym;load(row.dataset.sym);window.scrollTo({top:0,behavior:"smooth"})}
+});
+$("wsort").onchange=()=>{LS.set("chartSignal.wsort",$("wsort").value);renderWatch()};
+$("wsort").value=LS.get("chartSignal.wsort")||"added";
+let wbusy=false;
+async function refreshWatch(){
+  if(wbusy||!watch.length)return;wbusy=true;$("wrefresh").disabled=true;
+  const syms=watch.map(w=>w.sym);let done=0,fail=0;$("wstat").textContent=`관심종목 시세 갱신 중… 0/${syms.length}`;
+  const queue=syms.slice();
+  const worker=async()=>{while(queue.length){const sym=queue.shift();
+    try{const data=await fetchData(sym);const i=watch.findIndex(w=>w.sym===sym);if(i>=0)watch[i]={...watch[i],...summarize(sym,data)}}
+    catch(e){fail++;const i=watch.findIndex(w=>w.sym===sym);if(i>=0)watch[i]={...watch[i],err:errText(e)}}
+    done++;$("wstat").textContent=`관심종목 시세 갱신 중… ${done}/${syms.length}`;saveWatch();renderWatch()}};
+  await Promise.all([worker(),worker()]);
+  const t=new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+  $("wstat").textContent=fail?`${t} 갱신 · ${fail}개 종목은 불러오지 못했습니다 (종목 위에 손가락을 올리면 이유가 보입니다).`:`${t} 갱신 · 5분마다 자동 갱신`;
+  wbusy=false;$("wrefresh").disabled=false;
+}
+$("wrefresh").onclick=refreshWatch;
+$("star").onclick=toggleStar;
 function show(data,fromCache){
-  const bars=data.bars.map(b=>({t:b.t,o:+b.o,h:+b.h,l:+b.l,c:+b.c,v:+b.v||0}));
+  const bars=toBars(data);
   const label=`${data.name&&data.name!==data.symbol?data.name+" ":""}(${data.symbol})${data.currency?" · "+data.currency:""}`;
   run(bars,label);$("symbol").value=data.symbol.replace(/\.(KS|KQ)$/,"");
+  currentName=data.name&&data.name!==data.symbol?data.name:"";if(!current)current=data.symbol.replace(/\.(KS|KQ)$/,"");renderStar();renderWatch();
   const fetched=new Date(data.fetchedAt);const ft=isNaN(fetched)?"":fetched.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
   $("live").hidden=fromCache;
   msg(fromCache?`저장된 데이터 표시 중 (${ft} 기준). 새로고침을 눌러 최신 시세를 받으세요.`:`최근 180일 · ${bars.length}거래일 (${bars[0].t} ~ ${bars[bars.length-1].t}) · ${ft} 갱신`);
@@ -346,10 +477,12 @@ $("refresh").onclick=()=>load(current||$("symbol").value);
 document.querySelectorAll(".chipbtn").forEach(b=>b.onclick=()=>{$("symbol").value=b.dataset.s;load(b.dataset.s)});
 // 화면이 보이는 동안 1분마다 자동 갱신
 function startAuto(){clearInterval(timer);timer=setInterval(()=>{if(current&&document.visibilityState==="visible")load(current,{silent:true})},60000)}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&current)load(current,{silent:true})});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(current)load(current,{silent:true});if(Date.now()-lastW>120000){lastW=Date.now();refreshWatch()}}});
+let lastW=0;setInterval(()=>{if(document.visibilityState==="visible"){lastW=Date.now();refreshWatch()}},300000);
 // 시작: 저장된 데이터를 먼저 보여주고 최신 시세를 가져옴
 try{const c=JSON.parse(LS.get("chartSignal.cache")||"null");if(c&&c.bars&&c.bars.length>=30)show(c,true)}catch(_){}
-const first=LS.get("chartSignal.symbol")||"KO";$("symbol").value=first;load(first);startAuto();
+renderWatch();
+const first=LS.get("chartSignal.symbol")||(watch[0]&&watch[0].sym)||"KO";$("symbol").value=first;load(first).then(()=>{lastW=Date.now();refreshWatch()});startAuto();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>
