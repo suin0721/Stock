@@ -94,6 +94,32 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
 .starbtn:hover{border-color:var(--ink)}
 .starbtn:focus-visible,.wrow:focus-visible,.wx:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .watch{display:grid;gap:10px}
+.combo{position:relative;flex:1 1 12rem;min-width:0;display:flex}
+.combo .symbol{flex:1;min-width:0;text-transform:none}
+.suggest{position:absolute;z-index:20;top:calc(100% + 4px);left:0;right:0;list-style:none;margin:0;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);max-height:min(60vh,22rem);overflow-y:auto}
+.suggest li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px;border-radius:7px;cursor:pointer}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--bg)}
+.suggest b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suggest span{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.suggest .sinfo{grid-column:1/-1;color:var(--muted);font-size:.82rem;cursor:default;background:none!important}
+.tabbar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
+.tabbar button{all:unset;box-sizing:border-box;text-align:center;padding:9px 6px;border-radius:7px;font-weight:600;font-size:.9rem;color:var(--muted);cursor:pointer}
+.tabbar button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.tabbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tcount{font-family:var(--mono);font-size:.75rem;margin-left:5px;opacity:.75}
+.tabpane{display:grid;gap:18px}
+.news{display:grid;gap:10px}
+.nquery{text-transform:none;letter-spacing:0;color:var(--ink)}
+.nlist{list-style:none;margin:0;padding:0;display:grid}
+.nlist li{border-top:1px solid var(--line)}
+.nlist li:first-child{border-top:0}
+.nlist a{display:grid;gap:4px;padding:12px 4px;color:var(--ink);text-decoration:none;border-radius:8px}
+.nlist a:hover{background:var(--bg)}
+.nlist a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nlist b{font-weight:600;font-size:.95rem;line-height:1.45}
+.nlist p{margin:0;color:var(--muted);font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nmeta{font-size:.76rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+.nmeta .new{color:var(--up);font-weight:700}
 .whead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
 .whead .row{gap:6px}
 .wcount{font-family:var(--mono);color:var(--ink);margin-left:4px}
@@ -148,9 +174,12 @@ select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);
   </header>
 
   <form class="panel search" id="searchForm" autocomplete="off">
-    <label class="label" for="symbol">종목 코드</label>
+    <label class="label" for="symbol">종목 검색</label>
     <div class="row">
-      <input type="text" id="symbol" class="symbol mono" placeholder="KO, AAPL, 005930" aria-describedby="msg" spellcheck="false" autocapitalize="characters">
+      <div class="combo">
+        <input type="text" id="symbol" class="symbol" placeholder="종목명 또는 코드 (삼성전자, 코카콜라, AAPL)" aria-describedby="msg" spellcheck="false" autocapitalize="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" enterkeyhint="search">
+        <ul id="suggest" class="suggest" role="listbox" hidden></ul>
+      </div>
       <button class="btn primary" id="go" type="submit">불러오기</button>
       <button class="btn" id="refresh" type="button" title="지금 다시 불러오기">새로고침</button>
     </div>
@@ -164,23 +193,13 @@ select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);
     <div id="msg" class="msg" role="status"></div>
   </form>
 
-  <section class="panel watch" id="watch" aria-labelledby="wtitle">
-    <div class="whead">
-      <div class="label" id="wtitle">관심종목<span class="wcount" id="wcount"></span></div>
-      <div class="row">
-        <select id="wsort" class="wsort" aria-label="정렬">
-          <option value="added">추가순</option>
-          <option value="score">판정 점수순</option>
-          <option value="chg">등락률순</option>
-        </select>
-        <button type="button" class="btn sm" id="wrefresh">전체 새로고침</button>
-      </div>
-    </div>
-    <ul class="wlist" id="wlist"></ul>
-    <p class="wempty" id="wempty">아직 담은 종목이 없습니다. 종목을 불러온 뒤 오른쪽 위 <b>☆ 관심종목 추가</b>를 누르면 여기에 모이고, 종목마다 현재가와 매수·매도 판정을 한눈에 볼 수 있습니다.</p>
-    <div class="wstat" id="wstat"></div>
-  </section>
+  <nav class="tabbar" role="tablist" aria-label="보기">
+    <button type="button" role="tab" id="t-chart" data-tab="chart" aria-selected="true" aria-controls="tab-chart">차트 분석</button>
+    <button type="button" role="tab" id="t-news" data-tab="news" aria-selected="false" aria-controls="tab-news">뉴스<span class="tcount" id="newsCount"></span></button>
+    <button type="button" role="tab" id="t-watch" data-tab="watch" aria-selected="false" aria-controls="tab-watch">관심종목<span class="tcount" id="watchCount"></span></button>
+  </nav>
 
+  <div class="tabpane" id="tab-chart" role="tabpanel" aria-labelledby="t-chart">
   <section class="panel verdict" aria-live="polite">
     <div class="call">
       <div class="label">종합 판단 · <span id="asof" class="mono"></span></div>
@@ -215,6 +234,38 @@ select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);
     </div>
     <canvas id="cv" class="cv" aria-label="캔들 차트"></canvas>
   </section>
+  </div>
+
+  <div class="tabpane" id="tab-news" role="tabpanel" aria-labelledby="t-news" hidden>
+  <section class="panel news" aria-labelledby="ntitle">
+    <div class="whead">
+      <div class="label" id="ntitle">최근 뉴스 <span id="nquery" class="nquery"></span></div>
+      <button type="button" class="btn sm" id="nrefresh">새로고침</button>
+    </div>
+    <ul class="nlist" id="nlist"></ul>
+    <p class="wempty" id="nempty">종목을 불러오면 최근 30일 뉴스가 여기에 모입니다.</p>
+    <p class="note">한국 종목은 Google 뉴스(한국어), 해외 종목은 Yahoo Finance와 Google 뉴스에서 모은 기사입니다. 제목을 누르면 원문이 열립니다.</p>
+  </section>
+  </div>
+
+  <div class="tabpane" id="tab-watch" role="tabpanel" aria-labelledby="t-watch" hidden>
+  <section class="panel watch" id="watch" aria-labelledby="wtitle">
+    <div class="whead">
+      <div class="label" id="wtitle">관심종목<span class="wcount" id="wcount"></span></div>
+      <div class="row">
+        <select id="wsort" class="wsort" aria-label="정렬">
+          <option value="added">추가순</option>
+          <option value="score">판정 점수순</option>
+          <option value="chg">등락률순</option>
+        </select>
+        <button type="button" class="btn sm" id="wrefresh">전체 새로고침</button>
+      </div>
+    </div>
+    <ul class="wlist" id="wlist"></ul>
+    <p class="wempty" id="wempty">아직 담은 종목이 없습니다. 종목을 불러온 뒤 오른쪽 위 <b>☆ 관심종목 추가</b>를 누르면 여기에 모이고, 종목마다 현재가와 매수·매도 판정을 한눈에 볼 수 있습니다.</p>
+    <div class="wstat" id="wstat"></div>
+  </section>
+  </div>
 
   <details class="panel settings" id="settings">
     <summary class="label">데이터 서버 설정</summary>
@@ -389,6 +440,7 @@ async function load(sym,{silent=false}={}){
     const data=await fetchData(sym);
     current=sym;LS.set("chartSignal.symbol",sym);LS.set("chartSignal.cache",JSON.stringify(data));show(data,false);
     if(isWatched(sym))updateWatch(sym,data);
+    if(newsFor!==sym||tab==="news"&&Date.now()-newsAt>300000)loadNews();
     if(!silent&&window.scrollY>200)window.scrollTo({top:0,behavior:"smooth"});
   }catch(e){
     const why=errText(e);msg(why,true);if(!silent)$("settings").open=/연결하지 못했습니다/.test(why);
@@ -429,7 +481,7 @@ function renderWatch(){
   const sort=$("wsort").value;let list=watch.slice();
   if(sort==="score")list.sort((a,b)=>(b.score??-999)-(a.score??-999));
   else if(sort==="chg")list.sort((a,b)=>(b.chg??-999)-(a.chg??-999));
-  $("wcount").textContent=watch.length?` ${watch.length}`:"";
+  $("wcount").textContent=watch.length?` ${watch.length}`:"";$("watchCount").textContent=watch.length||"";
   $("wempty").hidden=watch.length>0;$("wsort").hidden=$("wrefresh").hidden=watch.length===0;
   $("wlist").innerHTML=list.map(w=>{
     const has=w.price!=null;const sc=w.score??0;
@@ -442,7 +494,7 @@ function renderWatch(){
 }
 $("wlist").addEventListener("click",e=>{
   const del=e.target.closest("[data-del]");if(del){watch=watch.filter(w=>w.sym!==del.dataset.del);saveWatch();renderWatch();renderStar();return}
-  const row=e.target.closest("[data-sym]");if(row){$("symbol").value=row.dataset.sym;load(row.dataset.sym);window.scrollTo({top:0,behavior:"smooth"})}
+  const row=e.target.closest("[data-sym]");if(row){$("symbol").value=row.dataset.sym;setTab("chart");load(row.dataset.sym);window.scrollTo({top:0,behavior:"smooth"})}
 });
 $("wsort").onchange=()=>{LS.set("chartSignal.wsort",$("wsort").value);renderWatch()};
 $("wsort").value=LS.get("chartSignal.wsort")||"added";
@@ -462,26 +514,115 @@ async function refreshWatch(){
 }
 $("wrefresh").onclick=refreshWatch;
 $("star").onclick=toggleStar;
+
+// ---------- 탭 ----------
+let tab="chart";
+function setTab(t){
+  if(!["chart","news","watch"].includes(t))t="chart";tab=t;LS.set("chartSignal.tab",t);
+  document.querySelectorAll(".tabbar [role=tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["chart","news","watch"].forEach(k=>$("tab-"+k).hidden=k!==t);
+  if(t==="chart")requestAnimationFrame(draw);
+  if(t==="news"&&current&&(newsFor!==current||Date.now()-newsAt>300000))loadNews();
+}
+document.querySelectorAll(".tabbar [role=tab]").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$("tab-chart").parentElement.querySelector(".tabbar").addEventListener("keydown",e=>{
+  if(!/^Arrow(Left|Right)$/.test(e.key))return;const order=["chart","news","watch"];const i=order.indexOf(tab);
+  const n=order[(i+(e.key==="ArrowRight"?1:2))%3];setTab(n);$("t-"+n).focus()});
+
+// ---------- 종목명 검색 ----------
+const picked={};try{Object.assign(picked,JSON.parse(LS.get("chartSignal.names")||"{}"))}catch(_){}
+let sItems=[],sActive=-1,sTimer=null,sSeq=0;
+async function searchApi(q){
+  const res=await fetch(`${apiBase()}/api/search?q=${encodeURIComponent(q)}`,{cache:"no-store"});
+  const d=await res.json();if(!res.ok)throw new Error(d.error||"검색 실패");return d.items||[];
+}
+function closeSuggest(){$("suggest").hidden=true;$("symbol").setAttribute("aria-expanded","false");sActive=-1}
+function renderSuggest(info){
+  const ul=$("suggest");
+  if(info){ul.innerHTML=`<li class="sinfo">${esc(info)}</li>`}
+  else ul.innerHTML=sItems.map((it,i)=>`<li role="option" id="opt${i}" data-i="${i}" aria-selected="${i===sActive}"><b>${esc(it.name)}</b><span>${esc(it.code)} · ${esc(it.market||"")}</span></li>`).join("");
+  ul.hidden=false;$("symbol").setAttribute("aria-expanded","true");
+  if(sActive>=0)$("symbol").setAttribute("aria-activedescendant","opt"+sActive);else $("symbol").removeAttribute("aria-activedescendant");
+}
+function pick(it){
+  closeSuggest();$("symbol").value=it.name;picked[it.code]=it.name;LS.set("chartSignal.names",JSON.stringify(picked));
+  setTab(tab==="watch"?"chart":tab);load(it.code);
+}
+$("symbol").addEventListener("input",()=>{
+  clearTimeout(sTimer);const q=$("symbol").value.trim();
+  if(!q){sItems=[];closeSuggest();return}
+  sTimer=setTimeout(async()=>{const my=++sSeq;renderSuggest("검색 중…");
+    try{const items=await searchApi(q);if(my!==sSeq)return;sItems=items;sActive=items.length?0:-1;renderSuggest(items.length?null:`'${q}'에 맞는 종목이 없습니다.`)}
+    catch(e){if(my===sSeq)renderSuggest("검색 서버에 연결하지 못했습니다. 코드로 입력해 보세요.")}},250);
+});
+$("symbol").addEventListener("keydown",e=>{
+  if($("suggest").hidden||!sItems.length){if(e.key==="Escape")closeSuggest();return}
+  if(e.key==="ArrowDown"){e.preventDefault();sActive=(sActive+1)%sItems.length;renderSuggest()}
+  else if(e.key==="ArrowUp"){e.preventDefault();sActive=(sActive-1+sItems.length)%sItems.length;renderSuggest()}
+  else if(e.key==="Escape")closeSuggest();
+});
+$("suggest").addEventListener("mousedown",e=>e.preventDefault());
+$("suggest").addEventListener("click",e=>{const li=e.target.closest("[data-i]");if(li)pick(sItems[+li.dataset.i])});
+$("symbol").addEventListener("blur",()=>setTimeout(closeSuggest,150));
+$("symbol").addEventListener("focus",()=>{if(sItems.length&&$("symbol").value.trim())renderSuggest()});
+async function submitSearch(){
+  const q=$("symbol").value.trim();clearTimeout(sTimer);
+  if(!q){msg("종목명이나 코드를 입력해주세요. 예: 삼성전자, 코카콜라, AAPL",true);return}
+  if(!$("suggest").hidden&&sActive>=0&&sItems[sActive]){pick(sItems[sActive]);return}
+  closeSuggest();
+  if(/^\d{6}$/.test(q)){load(q);return}
+  // 이름이면 검색해서 가장 알맞은 종목을 엽니다. 코드와 정확히 일치하면 그대로 엽니다.
+  msg(`'${q}' 검색 중…`);
+  try{
+    const items=await searchApi(q);
+    const exact=items.find(it=>it.code.toUpperCase()===q.toUpperCase()||it.name===q);
+    if(exact){pick(exact);return}
+    if(items.length&&!/^[A-Za-z.\-]{1,6}$/.test(q)){pick(items[0]);return}
+    if(items.length){pick(items[0]);return}
+    load(q);
+  }catch(_){load(q)}
+}
+
+// ---------- 뉴스 ----------
+let newsFor=null,newsAt=0,newsSeq=0;
+function ago(iso){const t=new Date(iso);if(isNaN(t))return"";const m=Math.round((Date.now()-t)/60000);
+  if(m<1)return"방금";if(m<60)return m+"분 전";const h=Math.round(m/60);if(h<24)return h+"시간 전";const d=Math.round(h/24);if(d<8)return d+"일 전";
+  return t.toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})}
+async function loadNews(){
+  if(!current)return;const sym=current,my=++newsSeq;newsFor=sym;newsAt=Date.now();
+  const name=picked[sym]||currentName||"";
+  $("nquery").textContent="· "+(name||sym);$("nempty").hidden=false;$("nempty").textContent="뉴스를 불러오는 중…";$("nlist").innerHTML="";$("newsCount").textContent="";
+  try{
+    const res=await fetch(`${apiBase()}/api/news?symbol=${encodeURIComponent(sym)}&name=${encodeURIComponent(name)}`,{cache:"no-store"});
+    const d=await res.json();if(my!==newsSeq)return;if(!res.ok)throw new Error(d.error||"뉴스 서버 오류");
+    const items=d.items||[];$("newsCount").textContent=items.length||"";
+    $("nempty").hidden=items.length>0;$("nempty").textContent=`${name||sym}의 최근 30일 뉴스를 찾지 못했습니다.`;
+    $("nlist").innerHTML=items.map(n=>{const fresh=n.time&&Date.now()-new Date(n.time)<6*3600e3;
+      return`<li><a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer"><b>${esc(n.title)}</b>${n.summary?`<p>${esc(n.summary)}</p>`:""}<span class="nmeta">${fresh?'<span class="new">NEW</span>':""}<span>${esc(n.source||"")}</span><span>${esc(ago(n.time))}</span></span></a></li>`}).join("");
+  }catch(e){if(my!==newsSeq)return;newsFor=null;$("nempty").hidden=false;$("nempty").textContent="뉴스를 불러오지 못했습니다. "+errText(e)}
+}
+$("nrefresh").onclick=()=>{newsFor=null;loadNews()};
+
 function show(data,fromCache){
   const bars=toBars(data);
   const label=`${data.name&&data.name!==data.symbol?data.name+" ":""}(${data.symbol})${data.currency?" · "+data.currency:""}`;
-  run(bars,label);$("symbol").value=data.symbol.replace(/\.(KS|KQ)$/,"");
+  run(bars,label);{const code=data.symbol.replace(/\.(KS|KQ)$/,"");if(document.activeElement!==$("symbol"))$("symbol").value=picked[code]||code}
   currentName=data.name&&data.name!==data.symbol?data.name:"";if(!current)current=data.symbol.replace(/\.(KS|KQ)$/,"");renderStar();renderWatch();
   const fetched=new Date(data.fetchedAt);const ft=isNaN(fetched)?"":fetched.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
   $("live").hidden=fromCache;
   msg(fromCache?`저장된 데이터 표시 중 (${ft} 기준). 새로고침을 눌러 최신 시세를 받으세요.`:`최근 180일 · ${bars.length}거래일 (${bars[0].t} ~ ${bars[bars.length-1].t}) · ${ft} 갱신`);
   $("srcinfo").textContent=`출처: ${data.source||"Yahoo Finance"} · 서버: ${apiBase()}`;
 }
-$("searchForm").onsubmit=e=>{e.preventDefault();load($("symbol").value)};
+$("searchForm").onsubmit=e=>{e.preventDefault();submitSearch()};
 $("refresh").onclick=()=>load(current||$("symbol").value);
-document.querySelectorAll(".chipbtn").forEach(b=>b.onclick=()=>{$("symbol").value=b.dataset.s;load(b.dataset.s)});
+document.querySelectorAll(".chipbtn").forEach(b=>b.onclick=()=>{closeSuggest();$("symbol").value=b.dataset.s;setTab("chart");load(b.dataset.s)});
 // 화면이 보이는 동안 1분마다 자동 갱신
 function startAuto(){clearInterval(timer);timer=setInterval(()=>{if(current&&document.visibilityState==="visible")load(current,{silent:true})},60000)}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(current)load(current,{silent:true});if(Date.now()-lastW>120000){lastW=Date.now();refreshWatch()}}});
 let lastW=0;setInterval(()=>{if(document.visibilityState==="visible"){lastW=Date.now();refreshWatch()}},300000);
 // 시작: 저장된 데이터를 먼저 보여주고 최신 시세를 가져옴
 try{const c=JSON.parse(LS.get("chartSignal.cache")||"null");if(c&&c.bars&&c.bars.length>=30)show(c,true)}catch(_){}
-renderWatch();
+renderWatch();setTab(LS.get("chartSignal.tab")||"chart");
 const first=LS.get("chartSignal.symbol")||(watch[0]&&watch[0].sym)||"KO";$("symbol").value=first;load(first).then(()=>{lastW=Date.now();refreshWatch()});startAuto();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();

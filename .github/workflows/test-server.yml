@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r server/requirements.txt
-      - name: Fetch KO and 005930 through the API
+      - name: Check history, search and news APIs
         run: |
           python - <<'PY'
           import sys
@@ -28,6 +28,16 @@ jobs:
               print(sym, r.status_code, d.get("symbol"), d.get("name"), d.get("currency"),
                     len(d.get("bars", [])), d.get("bars", [{}])[-1] if d.get("bars") else d.get("error"))
               assert r.status_code == 200 and len(d["bars"]) > 100, d
+          for q in ["삼성전자", "코카콜라", "apple", "에코프로"]:
+              d = c.get("/api/search", query_string={"q": q}).get_json()
+              print("search", q, "->", [(i["code"], i["name"]) for i in d["items"][:4]], d.get("errors"))
+              assert d["items"], d
+          for sym, name in [("005930", ""), ("KO", "코카콜라"), ("AAPL", "Apple Inc.")]:
+              d = c.get("/api/news", query_string={"symbol": sym, "name": name}).get_json()
+              print("news", sym, d.get("query"), len(d["items"]), d.get("errors"))
+              for n in d["items"][:3]:
+                  print("   ", n["time"], n["source"], "|", n["title"][:70])
+              assert d["items"], d
           assert c.get("/").status_code == 200
           print("OK")
           PY

@@ -1,14 +1,21 @@
 """차트 시그널 데이터 서버.
 
-yfinance로 종목의 최근 N일(기본 180일) 일봉을 가져와 JSON으로 돌려주고,
+- /api/history : yfinance로 최근 N일(기본 180일) 일봉
+- /api/search  : 종목명(한글·영어) 또는 코드로 종목 찾기 (네이버 자동완성 + Yahoo 검색)
+- /api/news    : 종목 최근 뉴스 (Yahoo Finance 뉴스 + Google 뉴스)
 같은 주소에서 앱 화면(index.html)도 함께 제공합니다.
 
     pip install -r server/requirements.txt
     python server/app.py            # http://localhost:8000
 """
+import json
 import os
 import re
 import time
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -20,6 +27,23 @@ app = Flask(__name__, static_folder=None)
 
 CACHE_SECONDS = 60          # 같은 종목은 1분 동안 캐시 (Yahoo 요청 제한 대비)
 _cache: dict = {}
+UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
+HANGUL = re.compile(r"[\uac00-\ud7a3]")
+
+
+def _cached(key, seconds, fn):
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < seconds:
+        return hit[1]
+    val = fn()
+    _cache[key] = (time.time(), val)
+    return val
+
+
+def _get(url, timeout=8):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
 
 
 @app.after_request
@@ -90,9 +114,15 @@ def history():
             last_err = str(e)
             continue
         if data and data["bars"]:
+            name_ko = None
+            if ticker.endswith((".KS", ".KQ")):
+                try:
+                    name_ko = _naver_name(ticker[:6])
+                except Exception:
+                    pass
             payload = {
                 "symbol": ticker,
-                "name": data["name"],
+                "name": name_ko or data["name"],
                 "currency": data["currency"],
                 "days": days,
                 "source": "Yahoo Finance (yfinance)",
@@ -106,6 +136,184 @@ def history():
     if last_err:
         msg = f"Yahoo Finance에서 데이터를 가져오지 못했습니다: {last_err}"
     return jsonify(error=msg), 502
+
+
+# ---------------- 종목 검색 ----------------
+_NAVER_US = {"NYSE", "NASDAQ", "AMEX", "NYSEARCA", "NYSE ARCA", "NYSEAMERICAN", "BATS"}
+
+
+def _naver_search(q):
+    """네이버 증권 자동완성: 한글 종목명(삼성전자, 코카콜라)으로 국내·미국 종목 검색."""
+    url = "https://ac.stock.naver.com/ac?" + urllib.parse.urlencode({"q": q, "target": "stock,index,etf"})
+    data = json.loads(_get(url, timeout=5).decode("utf-8"))
+    out = []
+    for it in data.get("items", []):
+        if isinstance(it, list):          # 예전 형식 방어
+            continue
+        code = str(it.get("code") or "").strip()
+        nation = (it.get("nationCode") or "").upper()
+        typ = (it.get("typeCode") or "").upper()
+        name = it.get("name") or code
+        if nation == "KOR" and re.fullmatch(r"\d{6}|[0-9A-Z]{6}", code):
+            sym = code + (".KQ" if "KOSDAQ" in typ else ".KS")
+            market = it.get("typeName") or ("코스닥" if "KOSDAQ" in typ else "코스피")
+        elif nation == "USA" and code:
+            sym = code.split(".")[0].replace("/", "-")
+            market = it.get("typeName") or typ or "미국"
+        else:
+            continue
+        out.append({"symbol": sym, "code": sym.replace(".KS", "").replace(".KQ", ""), "name": name,
+                    "market": market, "nation": nation})
+    return out
+
+
+def _naver_name(code):
+    def fn():
+        for it in _naver_search(code):
+            if it["code"] == code:
+                return it["name"]
+        return None
+    return _cached(("naver_name", code), 86400, fn)
+
+
+def _yahoo_search(q):
+    out = []
+    try:
+        quotes = yf.Search(q, max_results=8, news_count=0).quotes
+    except Exception:
+        url = "https://query2.finance.yahoo.com/v1/finance/search?" + urllib.parse.urlencode(
+            {"q": q, "quotesCount": 8, "newsCount": 0})
+        quotes = json.loads(_get(url, timeout=6)).get("quotes", [])
+    for it in quotes:
+        sym = it.get("symbol")
+        if not sym or it.get("quoteType") not in (None, "EQUITY", "ETF", "INDEX", "MUTUALFUND"):
+            continue
+        out.append({"symbol": sym, "code": re.sub(r"\.(KS|KQ)$", "", sym),
+                    "name": it.get("shortname") or it.get("longname") or sym,
+                    "market": it.get("exchDisp") or it.get("exchange") or "",
+                    "nation": "KOR" if sym.endswith((".KS", ".KQ")) else ""})
+    return out
+
+
+@app.get("/api/search")
+def search():
+    q = (request.args.get("q") or "").strip()[:40]
+    if not q:
+        return jsonify(items=[])
+
+    def fn():
+        items, seen, errors = [], set(), []
+        sources = [_naver_search, _yahoo_search] if HANGUL.search(q) or q.isdigit() else [_yahoo_search, _naver_search]
+        for src in sources:
+            try:
+                for it in src(q):
+                    if it["symbol"] not in seen:
+                        seen.add(it["symbol"])
+                        items.append(it)
+            except Exception as e:
+                errors.append(f"{src.__name__}: {e}")
+        return {"query": q, "items": items[:12], "errors": errors}
+
+    return jsonify(_cached(("search", q.lower()), 600, fn))
+
+
+# ---------------- 뉴스 ----------------
+def _yahoo_news(ticker):
+    out = []
+    for it in (yf.Ticker(ticker).news or [])[:20]:
+        c = it.get("content") if isinstance(it.get("content"), dict) else None
+        if c:   # yfinance 0.2.48 이후 형식
+            url = ((c.get("clickThroughUrl") or {}).get("url") or (c.get("canonicalUrl") or {}).get("url"))
+            t = c.get("pubDate") or c.get("displayTime")
+            out.append({"title": c.get("title"), "summary": c.get("summary") or "",
+                        "source": (c.get("provider") or {}).get("displayName") or "Yahoo Finance",
+                        "url": url, "time": t})
+        else:   # 예전 형식
+            ts = it.get("providerPublishTime")
+            out.append({"title": it.get("title"), "summary": "", "source": it.get("publisher") or "Yahoo Finance",
+                        "url": it.get("link"),
+                        "time": datetime.fromtimestamp(ts, timezone.utc).isoformat() if ts else None})
+    return [n for n in out if n["title"] and n["url"]]
+
+
+def _google_news(query, lang="ko"):
+    loc = {"ko": ("ko", "KR", "KR:ko"), "en": ("en-US", "US", "US:en")}[lang]
+    url = "https://news.google.com/rss/search?" + urllib.parse.urlencode(
+        {"q": query + " when:30d", "hl": loc[0], "gl": loc[1], "ceid": loc[2]})
+    root = ET.fromstring(_get(url))
+    out = []
+    for item in root.iter("item"):
+        title = (item.findtext("title") or "").strip()
+        src = (item.findtext("source") or "").strip()
+        if src and title.endswith(" - " + src):
+            title = title[: -len(src) - 3]
+        try:
+            t = parsedate_to_datetime(item.findtext("pubDate")).astimezone(timezone.utc).isoformat()
+        except Exception:
+            t = None
+        out.append({"title": title, "summary": "", "source": src or "Google 뉴스",
+                    "url": item.findtext("link"), "time": t})
+        if len(out) >= 20:
+            break
+    return out
+
+
+def _clean_en(name):
+    n = re.sub(r"\s*\(The\)", "", name).strip()
+    for _ in range(3):
+        n = re.sub(r",?\s+(Inc|Corp|Corporation|Co|Ltd|plc|PLC|Company|Holdings|Group|Incorporated|N\.V|S\.A|AG|SE)\.?$", "", n).strip()
+    return n or name
+
+
+def _norm_time(t):
+    try:
+        return datetime.fromisoformat(str(t).replace("Z", "+00:00")).astimezone(timezone.utc)
+    except Exception:
+        return datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+@app.get("/api/news")
+def news():
+    symbol = (request.args.get("symbol") or "").strip().upper()
+    name = (request.args.get("name") or "").strip()[:60]
+    if not re.fullmatch(r"[A-Z0-9.\-=^]{1,15}", symbol):
+        return jsonify(error="종목 코드를 확인해주세요."), 400
+
+    def fn():
+        is_kr = bool(re.fullmatch(r"\d{6}(\.(KS|KQ))?", symbol))
+        code = symbol[:6] if is_kr else symbol
+        ko_name = name if HANGUL.search(name) else None
+        if not ko_name:
+            try:
+                ko_name = _naver_name(code)
+            except Exception:
+                pass
+        items, errors = [], []
+        jobs = []
+        if ko_name:
+            jobs.append(("google-ko", lambda: _google_news(f'"{ko_name}"', "ko")))
+        if not is_kr:
+            jobs.append(("yahoo", lambda: _yahoo_news(symbol)))
+            en = _clean_en(name) if name and not HANGUL.search(name) else None
+            jobs.append(("google-en", lambda: _google_news(f'"{en}"' if en else f"{symbol} stock", "en")))
+        elif not ko_name:
+            jobs.append(("yahoo", lambda: _yahoo_news(_candidates(code)[0])))
+        for label, job in jobs:
+            try:
+                items += job()
+            except Exception as e:
+                errors.append(f"{label}: {e}")
+        seen, uniq = set(), []
+        for n in sorted(items, key=lambda n: _norm_time(n["time"]), reverse=True):
+            k = re.sub(r"\W+", "", n["title"].lower())[:60]
+            if k in seen:
+                continue
+            seen.add(k)
+            uniq.append(n)
+        return {"symbol": symbol, "query": ko_name or name or symbol, "items": uniq[:25], "errors": errors,
+                "fetchedAt": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+    return jsonify(_cached(("news", symbol, name), 300, fn))
 
 
 @app.get("/api/health")
