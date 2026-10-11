@@ -1,0 +1,87 @@
+name: Build desktop apps
+
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'icons/**', 'desktop/**', '.github/workflows/build-desktop.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Build Windows installer and portable exe
+        working-directory: desktop
+        run: |
+          npm install --no-audit --no-fund
+          npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            desktop/dist/ChartSignal-Setup.exe
+            desktop/dist/ChartSignal-Portable.exe
+
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Build macOS app
+        working-directory: desktop
+        run: |
+          npm install --no-audit --no-fund
+          npm run dist:mac
+      - name: Ad-hoc sign and package as DMG
+        working-directory: desktop/dist
+        run: |
+          set -e
+          for pair in "mac-arm64:arm64" "mac:x64"; do
+            dir="${pair%%:*}"; arch="${pair##*:}"
+            app=$(ls -d "$dir"/*.app | head -1)
+            codesign --force --deep --sign - "$app"
+            stage="stage-$arch"; rm -rf "$stage"; mkdir "$stage"
+            cp -R "$app" "$stage/"
+            ln -s /Applications "$stage/Applications"
+            hdiutil create -volname "ChartSignal" -srcfolder "$stage" -ov -format UDZO "ChartSignal-mac-$arch.dmg"
+          done
+          ls -la *.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: desktop/dist/*.dmg
+
+  release:
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - run: ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop
+          name: 차트 시그널 컴퓨터용 (최신)
+          make_latest: false
+          body: |
+            **Windows**
+            - `ChartSignal-Setup.exe` : 설치형 (바탕화면·시작 메뉴 바로가기 생성)
+            - `ChartSignal-Portable.exe` : 설치 없이 바로 실행
+
+            **macOS**
+            - `ChartSignal-mac-arm64.dmg` : M1·M2·M3·M4 맥
+            - `ChartSignal-mac-x64.dmg` : 인텔 맥
+
+            빌드 번호: ${{ github.run_number }}
+          files: out/*

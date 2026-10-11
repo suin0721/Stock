@@ -3,7 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
-    paths-ignore: ['server/**', 'render.yaml', 'README.md', '.python-version']
+    paths-ignore: ['server/**', 'render.yaml', 'README.md', '.python-version', 'desktop/**', '.github/workflows/build-desktop.yml']
   workflow_dispatch:
 
 permissions:

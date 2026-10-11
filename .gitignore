@@ -4,3 +4,7 @@ android/app/build/
 android/app/src/main/assets/
 android/local.properties
 *.apk
+desktop/node_modules/
+desktop/dist/
+desktop/app/
+desktop/build/

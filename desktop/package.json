@@ -1,0 +1,47 @@
+{
+  "name": "chart-signal",
+  "productName": "차트 시그널",
+  "version": "1.0.0",
+  "description": "일봉·주봉 차트를 분석해 매수·매도 방향을 제안하는 앱",
+  "author": "suin0721",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "prepare-web": "node prepare-web.js",
+    "start": "npm run prepare-web && electron .",
+    "dist:win": "npm run prepare-web && electron-builder --win nsis portable --x64 --publish never",
+    "dist:mac": "npm run prepare-web && electron-builder --mac dir --arm64 --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.suin.chartsignal",
+    "productName": "차트 시그널",
+    "executableName": "ChartSignal",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "app/**/*", "package.json"],
+    "icon": "build/icon.png",
+    "win": {
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "차트 시그널",
+      "artifactName": "ChartSignal-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "ChartSignal-Portable.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.finance",
+      "icon": "build/icon.png",
+      "identity": null
+    }
+  }
+}

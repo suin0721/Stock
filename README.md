@@ -5,8 +5,10 @@
 
 ## 바로 쓰기
 
-- 웹: 아래 **데이터 서버**를 배포한 주소에서 바로 사용
+- 웹: https://chart-signal.onrender.com
 - 안드로이드 APK: [ChartSignal.apk](https://github.com/suin0721/Stock/releases/download/latest/ChartSignal.apk)
+- 윈도우: [설치형 ChartSignal-Setup.exe](https://github.com/suin0721/Stock/releases/download/desktop/ChartSignal-Setup.exe) · [설치 없이 실행 ChartSignal-Portable.exe](https://github.com/suin0721/Stock/releases/download/desktop/ChartSignal-Portable.exe)
+- 맥: [M1~M4 맥](https://github.com/suin0721/Stock/releases/download/desktop/ChartSignal-mac-arm64.dmg) · [인텔 맥](https://github.com/suin0721/Stock/releases/download/desktop/ChartSignal-mac-x64.dmg)
 
 ### 휴대폰에 앱으로 설치
 - **아이폰(Safari)**: 서버 주소 열기 → 공유 버튼 → "홈 화면에 추가"
@@ -65,6 +67,7 @@ python server/app.py      # http://localhost:8000
 - `index.html` — 앱 화면 (차트는 Canvas로 직접 그림)
 - `server/` — yfinance 데이터 서버 (Flask), `render.yaml` — Render 배포 설정
 - `manifest.webmanifest`, `sw.js`, `icons/` — 설치형 앱(PWA) 설정
+- `android/` — 안드로이드 APK (WebView), `desktop/` — 윈도우·맥 앱 (Electron). 둘 다 GitHub Actions가 자동 빌드
 
 ## 주의
 기술적 지표만을 규칙에 따라 점수화한 참고 도구입니다. 실적·뉴스·수급은 반영하지 않으며 투자 권유가 아닙니다.
