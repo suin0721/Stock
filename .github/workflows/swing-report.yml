@@ -1,0 +1,42 @@
+name: Swing scan report
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r server/requirements.txt
+      - name: Run scans
+        run: |
+          mkdir -p report
+          python - <<'PY'
+          import json, sys, time
+          sys.path.insert(0, "server")
+          import swing
+          for m in ["KR", "US"]:
+              t0 = time.time()
+              r = swing.scan(m)
+              r["elapsed"] = round(time.time() - t0, 1)
+              json.dump(r, open(f"report/swing_{m}.json", "w"), ensure_ascii=False, indent=1)
+          PY
+      - name: Save report to ci-report branch
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          cp -r report /tmp/report
+          git checkout --orphan ci-report
+          git rm -rf --cached . >/dev/null
+          rm -rf ./*
+          cp /tmp/report/* .
+          git add -f swing_*.json
+          git commit -m "swing scan report"
+          git push -f origin ci-report
