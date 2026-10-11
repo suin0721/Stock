@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r server/requirements.txt
-      - name: Check history, search and news APIs
+      - name: Check history, search, news and swing scanner
         run: |
           python - <<'PY'
           import sys
@@ -38,6 +38,19 @@ jobs:
               for n in d["items"][:3]:
                   print("   ", n["time"], n["source"], "|", n["title"][:70])
               assert d["items"], d
+          import swing, time
+          for m in ["KR", "US"]:
+              t0 = time.time()
+              r = swing.scan(m)
+              print(f"\n== swing {m}: {r['universe']} scanned={r['scanned']} asof={r['asof']} candidates={r['total']} ({time.time()-t0:.0f}s)")
+              for i in r["indexes"]:
+                  print("  index", i)
+              for st in r["setupStats"]:
+                  print("  stats", st)
+              for it in r["items"][:8]:
+                  print("  ", it["score"], it["code"], it["name"], it["setupNames"], it["close"], "stop", it["stopPct"], "t1", it["t1Pct"], it["reasons"], it["cautions"])
+              assert r["scanned"] >= 60, r["scanned"]
+          assert c.get("/api/swing?market=KR").status_code == 200
           assert c.get("/").status_code == 200
           print("OK")
           PY

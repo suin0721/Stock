@@ -3,6 +3,7 @@
 - /api/history : yfinance로 최근 N일(기본 180일) 일봉
 - /api/search  : 종목명(한글·영어) 또는 코드로 종목 찾기 (네이버 자동완성 + Yahoo 검색)
 - /api/news    : 종목 최근 뉴스 (Yahoo Finance 뉴스 + Google 뉴스)
+- /api/swing   : 2~3일 단타 후보 스캔 (돌파·눌림목·과매도 반등 + 과거 1년 신호 성과)
 같은 주소에서 앱 화면(index.html)도 함께 제공합니다.
 
     pip install -r server/requirements.txt
@@ -21,6 +22,8 @@ from pathlib import Path
 
 import yfinance as yf
 from flask import Flask, jsonify, request, send_from_directory
+
+import swing
 
 ROOT = Path(__file__).resolve().parent.parent
 app = Flask(__name__, static_folder=None)
@@ -314,6 +317,14 @@ def news():
                 "fetchedAt": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
     return jsonify(_cached(("news", symbol, name), 300, fn))
+
+
+@app.get("/api/swing")
+def swing_scan():
+    market = (request.args.get("market") or "KR").upper()
+    if market not in swing.MARKETS:
+        return jsonify(error="market은 KR 또는 US만 됩니다."), 400
+    return jsonify(swing.get(market, refresh=request.args.get("refresh") == "1"))
 
 
 @app.get("/api/health")
