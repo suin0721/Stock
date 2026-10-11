@@ -403,7 +403,6 @@ def scan(market="KR", progress=None):
             "spark": [round(float(x), 4) for x in f["c"][-30:]],
         })
 
-    items.sort(key=lambda x: (-x["score"], -x["valueAvg"]))
     setup_stats = []
     for k, st in stats.items():
         n_ = st["signals"]
@@ -414,6 +413,21 @@ def scan(market="KR", progress=None):
             "stopRate": round(st["stops"] / n_ * 100, 1) if n_ else None,
             "avgRet": round(st["sum"] / n_ * 100, 2) if n_ else None,
         })
+    # 이 시장에서 최근 1년 성과가 나빴던 신호는 점수를 깎고 알려줍니다
+    perf = {st["key"]: st for st in setup_stats}
+    for it in items:
+        best = max((perf[k] for k in it["setups"] if perf[k]["signals"] >= 15),
+                   key=lambda st: st["avgRet"], default=None)
+        if best is None:
+            continue
+        if best["avgRet"] < 0:
+            it["score"] = max(0, it["score"] - 12)
+            it["cautions"].append(f"{best['name']} 신호는 최근 1년 이 시장에서 평균 {best['avgRet']:+.2f}% (손실 우위)")
+        elif best["avgRet"] >= 0.3:
+            it["score"] = min(100, it["score"] + 5)
+            it["reasons"].append(f"{best['name']} 신호 최근 1년 평균 {best['avgRet']:+.2f}%, 수익 마감 {best['winRate']:.0f}%")
+    items.sort(key=lambda x: (-x["score"], -x["valueAvg"]))
+
     return {
         "market": market, "currency": cfg["currency"], "asof": asof,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
