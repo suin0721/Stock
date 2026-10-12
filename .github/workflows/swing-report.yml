@@ -22,7 +22,7 @@ jobs:
           import json, sys, time
           sys.path.insert(0, "server")
           import swing
-          for m in ["KR", "US"]:
+          for m in ["M7", "KR", "US"]:
               t0 = time.time()
               r = swing.scan(m)
               r["elapsed"] = round(time.time() - t0, 1)

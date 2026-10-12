@@ -38,7 +38,13 @@ MARKETS = {
            "min_value": 3e9, "min_price": 1000, "currency": "KRW"},
     "US": {"indexes": [("^GSPC", "S&P 500"), ("^IXIC", "나스닥")], "cost": 0.0005,
            "min_value": 3e7, "min_price": 5, "currency": "USD"},
+    # 매그니피센트7: 종목이 적어 3년치로 신호 성과를 계산하고, 7종목 현황판을 함께 돌려줍니다
+    "M7": {"indexes": [("^GSPC", "S&P 500"), ("^IXIC", "나스닥")], "cost": 0.0005,
+           "min_value": 0, "min_price": 0, "currency": "USD", "period": "3y", "board": True},
 }
+
+M7 = [("AAPL", "애플"), ("MSFT", "마이크로소프트"), ("GOOGL", "알파벳"), ("AMZN", "아마존"),
+      ("META", "메타"), ("NVDA", "엔비디아"), ("TSLA", "테슬라")]
 
 # 네이버 순위를 못 받을 때 쓰는 국내 대표 종목 (코드, 이름, 시장)
 KR_FALLBACK = [
@@ -151,6 +157,8 @@ def _naver_rank(market, count):
 
 
 def universe(market):
+    if market == "M7":
+        return [(s, n, s) for s, n in M7], "매그니피센트7"
     if market == "US":
         return [(s, n, s) for s, n in US_UNIVERSE], "미국 대형·인기주 %d종목" % len(US_UNIVERSE)
     try:
@@ -167,14 +175,14 @@ def universe(market):
     return [(c, n, f"{c}.{m}") for c, n, m in KR_FALLBACK], f"국내 대표 {len(KR_FALLBACK)}종목"
 
 
-def _download(tickers, progress=None):
+def _download(tickers, progress=None, period="1y"):
     frames = {}
     chunks = [tickers[i:i + 50] for i in range(0, len(tickers), 50)]
     for k, chunk in enumerate(chunks):
         df = None
         for attempt in range(2):
             try:
-                df = yf.download(chunk, period="1y", interval="1d", group_by="ticker", auto_adjust=False,
+                df = yf.download(chunk, period=period, interval="1d", group_by="ticker", auto_adjust=False,
                                  threads=True, progress=False)
                 break
             except Exception:
@@ -296,7 +304,10 @@ def scan(market="KR", progress=None):
     cfg = MARKETS[market]
     uni, uni_label = universe(market)
     idx_tickers = [t for t, _ in cfg["indexes"]]
-    frames = _download(idx_tickers + [t for _, _, t in uni], progress)
+    period = cfg.get("period", "1y")
+    years = int(period[:-1])
+    frames = _download(idx_tickers + [t for _, _, t in uni], progress, period)
+    board = []
 
     indexes = []
     idx_feat = {}
@@ -320,6 +331,18 @@ def scan(market="KR", progress=None):
         asof = max(asof or f["dates"][n], f["dates"][n])
         sig = _signals(f)
         liquid = (f["tv20"] >= cfg["min_value"]) & (f["c"] >= cfg["min_price"])
+        if cfg.get("board"):
+            c_, m20, m60 = f["c"][n], f["ma20"][n], f["ma60"][n]
+            trend = "상승" if c_ > m20 > m60 else "하락" if c_ < m20 < m60 else "횡보"
+            hi52 = np.nanmax(f["h"][-252:])
+            board.append({
+                "code": code, "name": name, "close": round(float(c_), 2), "chg": round(float(f["chg"][n] * 100), 2),
+                "ret5": round(float((c_ / f["c"][n - 5] - 1) * 100), 2),
+                "ret20": round(float((c_ / f["c"][n - 20] - 1) * 100), 2),
+                "fromHigh": round(float((c_ / hi52 - 1) * 100), 1), "rsi14": round(float(f["rsi14"][n]), 0),
+                "trend": trend, "setups": [SETUPS[k] for k, s_ in sig.items() if s_[n]],
+                "spark": [round(float(x), 2) for x in f["c"][-60:]],
+            })
 
         # 과거 성과 (최근 1년, 120일선이 생긴 뒤부터)
         own = {}
@@ -422,10 +445,10 @@ def scan(market="KR", progress=None):
             continue
         if best["avgRet"] < 0:
             it["score"] = max(0, it["score"] - 12)
-            it["cautions"].append(f"{best['name']} 신호는 최근 1년 이 시장에서 평균 {best['avgRet']:+.2f}% (손실 우위)")
+            it["cautions"].append(f"{best['name']} 신호는 최근 {years}년 이 시장에서 평균 {best['avgRet']:+.2f}% (손실 우위)")
         elif best["avgRet"] >= 0.3:
             it["score"] = min(100, it["score"] + 5)
-            it["reasons"].append(f"{best['name']} 신호 최근 1년 평균 {best['avgRet']:+.2f}%, 수익 마감 {best['winRate']:.0f}%")
+            it["reasons"].append(f"{best['name']} 신호 최근 {years}년 평균 {best['avgRet']:+.2f}%, 수익 마감 {best['winRate']:.0f}%")
     items.sort(key=lambda x: (-x["score"], -x["valueAvg"]))
 
     return {
@@ -435,6 +458,7 @@ def scan(market="KR", progress=None):
         "rules": {"holdDays": HOLD_DAYS, "stopAtr": STOP_ATR, "t1Atr": T1_ATR, "t2Atr": T2_ATR,
                   "costPct": round(cfg["cost"] * 100, 2)},
         "setupStats": setup_stats, "items": items[:20], "total": len(items),
+        "years": years, "board": board,
     }
 
 

@@ -39,7 +39,7 @@ jobs:
                   print("   ", n["time"], n["source"], "|", n["title"][:70])
               assert d["items"], d
           import swing, time
-          for m in ["KR", "US"]:
+          for m in ["M7", "KR", "US"]:
               t0 = time.time()
               r = swing.scan(m)
               print(f"\n== swing {m}: {r['universe']} scanned={r['scanned']} asof={r['asof']} candidates={r['total']} ({time.time()-t0:.0f}s)")
@@ -49,7 +49,7 @@ jobs:
                   print("  stats", st)
               for it in r["items"][:8]:
                   print("  ", it["score"], it["code"], it["name"], it["setupNames"], it["close"], "stop", it["stopPct"], "t1", it["t1Pct"], it["reasons"], it["cautions"])
-              assert r["scanned"] >= 60, r["scanned"]
+              assert r["scanned"] >= (7 if m == "M7" else 60), r["scanned"]
           assert c.get("/api/swing?market=KR").status_code == 200
           assert c.get("/").status_code == 200
           print("OK")
