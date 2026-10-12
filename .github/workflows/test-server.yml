@@ -38,6 +38,9 @@ jobs:
               for n in d["items"][:3]:
                   print("   ", n["time"], n["source"], "|", n["title"][:70])
               assert d["items"], d
+          d = c.get("/api/quotes?symbols=TSLA,VOO,SOXL,005930,KO").get_json()
+          print("quotes", d)
+          assert len(d["quotes"]) == 5, d
           import swing, time
           for m in ["M7", "KR", "US"]:
               t0 = time.time()

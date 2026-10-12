@@ -3,6 +3,7 @@
 - /api/history : yfinance로 최근 N일(기본 180일) 일봉
 - /api/search  : 종목명(한글·영어) 또는 코드로 종목 찾기 (네이버 자동완성 + Yahoo 검색)
 - /api/news    : 종목 최근 뉴스 (Yahoo Finance 뉴스 + Google 뉴스)
+- /api/quotes  : 여러 종목 현재가 한 번에 (보유종목 탭)
 - /api/swing   : 2~3일 단타 후보 스캔 (돌파·눌림목·과매도 반등 + 과거 1년 신호 성과)
 같은 주소에서 앱 화면(index.html)도 함께 제공합니다.
 
@@ -20,6 +21,7 @@ from email.utils import parsedate_to_datetime
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pandas as pd
 import yfinance as yf
 from flask import Flask, jsonify, request, send_from_directory
 
@@ -317,6 +319,70 @@ def news():
                 "fetchedAt": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
     return jsonify(_cached(("news", symbol, name), 300, fn))
+
+
+# ---------------- 현재가 여러 개 ----------------
+EXTRA_NAMES = {"VOO": "뱅가드 S&P500", "SPY": "SPDR S&P500", "IVV": "아이셰어즈 S&P500", "VTI": "뱅가드 미국 전체",
+               "QQQ": "인베스코 나스닥100", "QQQM": "인베스코 나스닥100", "SCHD": "슈왑 배당", "DIA": "다우존스",
+               "SOXL": "반도체 3배 레버리지", "TQQQ": "나스닥 3배 레버리지", "UPRO": "S&P500 3배 레버리지",
+               "SOXX": "반도체 ETF", "SMH": "반도체 ETF", "MAGS": "매그니피센트7 ETF", "SQQQ": "나스닥 3배 인버스"}
+
+
+def _name_for(sym, ticker):
+    if ticker.endswith((".KS", ".KQ")):
+        try:
+            return _naver_name(ticker[:6])
+        except Exception:
+            return None
+    if sym in EXTRA_NAMES:
+        return EXTRA_NAMES[sym]
+    for s_, n_ in swing.US_UNIVERSE + swing.M7:
+        if s_ == sym:
+            return n_
+    return None
+
+
+@app.get("/api/quotes")
+def quotes():
+    syms = []
+    for s_ in (request.args.get("symbols") or "").split(","):
+        s_ = s_.strip().upper()
+        if re.fullmatch(r"[A-Z0-9.\-]{1,12}", s_) and s_ not in syms:
+            syms.append(s_)
+    syms = syms[:40]
+    if not syms:
+        return jsonify(quotes={})
+
+    def fn():
+        mapping, tickers = {}, []
+        for s_ in syms:
+            mapping[s_] = _candidates(s_)
+            tickers += mapping[s_]
+        df = yf.download(tickers, period="5d", interval="1d", group_by="ticker", auto_adjust=False,
+                         threads=True, progress=False)
+        multi = isinstance(df.columns, pd.MultiIndex)
+        level0 = set(df.columns.get_level_values(0)) if multi else set()
+        out = {}
+        for s_, ts in mapping.items():
+            for t in ts:
+                if multi and t in level0:
+                    sub = df[t]
+                elif not multi and len(tickers) == 1:
+                    sub = df
+                else:
+                    continue
+                sub = sub.dropna(subset=["Close"])
+                if sub.empty:
+                    continue
+                c = float(sub["Close"].iloc[-1])
+                p = float(sub["Close"].iloc[-2]) if len(sub) > 1 else c
+                out[s_] = {"symbol": t, "name": _name_for(s_, t), "price": round(c, 4), "prev": round(p, 4),
+                           "chg": round((c / p - 1) * 100, 2), "date": sub.index[-1].strftime("%Y-%m-%d"),
+                           "currency": "KRW" if t.endswith((".KS", ".KQ")) else "USD"}
+                break
+        return {"quotes": out, "fetchedAt": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+    return jsonify(_cached(("quotes", tuple(sorted(syms))), 60, fn))
 
 
 @app.get("/api/swing")

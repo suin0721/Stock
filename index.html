@@ -102,14 +102,14 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
 .suggest b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .suggest span{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
 .suggest .sinfo{grid-column:1/-1;color:var(--muted);font-size:.82rem;cursor:default;background:none!important}
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
 .tabbar button{all:unset;box-sizing:border-box;text-align:center;padding:9px 6px;border-radius:7px;font-weight:600;font-size:.9rem;color:var(--muted);cursor:pointer}
 .tabbar button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
 .tabbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tcount{font-family:var(--mono);font-size:.75rem;margin-left:5px;opacity:.75}
 .tabpane{display:grid;gap:18px}
 .news{display:grid;gap:10px}
-.tabbar button{font-size:.86rem;padding:9px 4px}
+.tabbar button{font-size:.86rem;padding:9px 2px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{all:unset;cursor:pointer;padding:6px 12px;font-size:.82rem;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
@@ -119,6 +119,45 @@ input[type=text],input[type=url]{border:1px solid var(--line);border-radius:8px;
 .smood .mood{font-weight:700}
 .smood .idx{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--muted)}
 .smood .idx b{color:var(--ink);font-weight:600}
+.hsum{display:grid;gap:12px}
+.hstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hstat{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px;min-width:0}
+.hstat b{font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hstat span{font-size:.74rem;color:var(--muted)}
+.hrule{gap:6px;align-items:center;font-size:.86rem}
+.hrule .note{flex-basis:100%}
+input.num{width:4.2rem;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--bg);color:var(--ink);font:inherit;font-family:var(--mono)}
+.hlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.hcard{display:grid;gap:10px}
+.hcard.hit-tp{border-color:var(--up);box-shadow:inset 3px 0 0 var(--up)}
+.hcard.hit-sl{border-color:var(--down);box-shadow:inset 3px 0 0 var(--down)}
+.hhead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.hname{display:grid;gap:4px;min-width:0}
+.hname b{font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hname .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+.tag.idx{color:var(--ma3)}.tag.m7{color:var(--accent)}.tag.exit{color:var(--muted)}.tag.lev{color:var(--up)}
+.hpl{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;display:grid;gap:2px}
+.hpl b{font-size:1.05rem}
+.hpl span{font-size:.76rem}
+.hact{display:inline-block;font-family:var(--sans);font-size:.74rem;font-weight:700;padding:2px 9px;border-radius:999px;color:var(--panel)}
+.hact.tp{background:var(--up)}.hact.sl{background:var(--down)}
+.hbar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--down) 0,var(--line) 40%,var(--line) 60%,var(--up) 100%);opacity:.9;margin:6px 0 2px}
+.hbar i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-2px)}
+.hbar u{position:absolute;top:-2px;width:2px;height:12px;background:var(--muted);transform:translateX(-1px)}
+.hlv{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:.76rem;font-variant-numeric:tabular-nums}
+.hlv span:last-child{text-align:right}
+.hnote{font-size:.8rem;color:var(--muted)}
+.hfoot{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.horder{margin:0;white-space:pre-wrap;font-family:var(--mono);font-size:.8rem;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+.hedit{display:grid;gap:12px}
+.hedit summary{cursor:pointer}
+.hedit[open] summary{margin-bottom:10px}
+.hform,.hpaste{display:grid;gap:10px}
+.hpaste{margin-top:14px}
+.hgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.hgrid label{display:grid;gap:4px;font-size:.74rem;color:var(--muted);min-width:0}
+.hgrid input{border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:.9rem;min-width:0;width:100%}
+@media (max-width:560px){.hgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.hstats{grid-template-columns:repeat(3,minmax(0,1fr))}.hstat b{font-size:.92rem}}
 .sboard{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
 .sboard table{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
 .sboard th{font-size:.68rem;font-weight:600;color:var(--muted);text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -259,10 +298,11 @@ select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);
   </form>
 
   <nav class="tabbar" role="tablist" aria-label="보기">
-    <button type="button" role="tab" id="t-swing" data-tab="swing" aria-selected="false" aria-controls="tab-swing">단타 추천<span class="tcount" id="swingCount"></span></button>
-    <button type="button" role="tab" id="t-chart" data-tab="chart" aria-selected="true" aria-controls="tab-chart">차트 분석</button>
+    <button type="button" role="tab" id="t-swing" data-tab="swing" aria-selected="false" aria-controls="tab-swing">단타<span class="tcount" id="swingCount"></span></button>
+    <button type="button" role="tab" id="t-chart" data-tab="chart" aria-selected="true" aria-controls="tab-chart">차트</button>
     <button type="button" role="tab" id="t-news" data-tab="news" aria-selected="false" aria-controls="tab-news">뉴스<span class="tcount" id="newsCount"></span></button>
-    <button type="button" role="tab" id="t-watch" data-tab="watch" aria-selected="false" aria-controls="tab-watch">관심종목<span class="tcount" id="watchCount"></span></button>
+    <button type="button" role="tab" id="t-watch" data-tab="watch" aria-selected="false" aria-controls="tab-watch">관심<span class="tcount" id="watchCount"></span></button>
+    <button type="button" role="tab" id="t-hold" data-tab="hold" aria-selected="false" aria-controls="tab-hold">보유<span class="tcount" id="holdCount"></span></button>
   </nav>
 
   <div class="tabpane" id="tab-swing" role="tabpanel" aria-labelledby="t-swing" hidden>
@@ -364,6 +404,49 @@ select.wsort{border:1px solid var(--line);background:var(--bg);color:var(--ink);
     <p class="wempty" id="wempty">아직 담은 종목이 없습니다. 종목을 불러온 뒤 오른쪽 위 <b>☆ 관심종목 추가</b>를 누르면 여기에 모이고, 종목마다 현재가와 매수·매도 판정을 한눈에 볼 수 있습니다.</p>
     <div class="wstat" id="wstat"></div>
   </section>
+  </div>
+
+  <div class="tabpane" id="tab-hold" role="tabpanel" aria-labelledby="t-hold" hidden>
+    <section class="panel hsum" aria-labelledby="htitle">
+      <div class="whead">
+        <div class="label" id="htitle">보유종목 · 매도 규칙</div>
+        <div class="row">
+          <button type="button" class="btn sm" id="hrefresh">현재가 새로고침</button>
+        </div>
+      </div>
+      <div class="hstats" id="hstats"></div>
+      <div class="hrule row">
+        <label for="htp">익절</label><input id="htp" type="number" inputmode="decimal" step="0.5" min="0.5" class="num"><span>%</span>
+        <label for="hsl">손절</label><input id="hsl" type="number" inputmode="decimal" step="0.5" min="0.5" class="num"><span>%</span>
+        <span class="note">기본 규칙입니다. 종목마다 따로 정할 수도 있어요. 지수 ETF는 계속 모으는 대상이라 매도가를 계산하지 않습니다.</span>
+      </div>
+      <div class="sstatus" id="hstatus" role="status"></div>
+    </section>
+    <ul class="hlist" id="hlist"></ul>
+    <p class="panel wempty" id="hempty">아직 입력한 보유종목이 없습니다. 아래 <b>보유종목 입력</b>에 증권사 잔고를 붙여넣거나 한 종목씩 추가하세요.</p>
+    <section class="panel horders" id="horders" hidden>
+      <div class="whead"><div class="label">증권사에 걸어둘 주문</div><button type="button" class="btn sm" id="hcopy">복사</button></div>
+      <pre id="hordertext" class="horder"></pre>
+      <p class="note">미국 주식 지정가 주문은 보통 그날만 유효합니다. 증권사 앱의 기간 지정 주문이나 감시(스탑) 주문 기능으로 걸어두면 새벽에 깨어 있지 않아도 됩니다.</p>
+    </section>
+    <details class="panel hedit" id="hedit">
+      <summary class="label">보유종목 입력</summary>
+      <form class="hform" id="hform" autocomplete="off">
+        <div class="hgrid">
+          <label>티커/코드<input id="hsym" type="text" class="mono" placeholder="TSLA, 005930" autocapitalize="characters" spellcheck="false" required></label>
+          <label>수량<input id="hqty" type="number" inputmode="decimal" step="any" min="0" placeholder="1" required></label>
+          <label>평균단가<input id="havg" type="number" inputmode="decimal" step="any" min="0" placeholder="371.90" required></label>
+          <label>익절 %<input id="htp1" type="number" inputmode="decimal" step="0.5" min="0" placeholder="기본"></label>
+          <label>손절 %<input id="hsl1" type="number" inputmode="decimal" step="0.5" min="0" placeholder="기본"></label>
+        </div>
+        <div class="row"><button class="btn primary" type="submit" id="hsave">저장</button><span class="note">같은 티커를 다시 저장하면 덮어씁니다.</span></div>
+      </form>
+      <div class="hpaste">
+        <label for="hbulk" class="label">한 번에 붙여넣기</label>
+        <textarea id="hbulk" placeholder="한 줄에 한 종목: 티커 수량 평균단가&#10;TSLA 1 371.90&#10;NVDA 1 229.63&#10;VOO 3 702.35"></textarea>
+        <div class="row"><button type="button" class="btn" id="hbulkgo">목록 바꾸기</button><span class="note">지금 목록을 지우고 붙여넣은 내용으로 바꿉니다. 이 기기에만 저장되고 서버로 보내지 않습니다.</span></div>
+      </div>
+    </details>
   </div>
 
   <details class="panel settings" id="settings">
@@ -617,17 +700,18 @@ $("star").onclick=toggleStar;
 // ---------- 탭 ----------
 let tab="chart";
 function setTab(t){
-  if(!["swing","chart","news","watch"].includes(t))t="chart";tab=t;LS.set("chartSignal.tab",t);
+  if(!["swing","chart","news","watch","hold"].includes(t))t="chart";tab=t;LS.set("chartSignal.tab",t);
   document.querySelectorAll(".tabbar [role=tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
-  ["swing","chart","news","watch"].forEach(k=>$("tab-"+k).hidden=k!==t);
+  ["swing","chart","news","watch","hold"].forEach(k=>$("tab-"+k).hidden=k!==t);
+  if(t==="hold")loadQuotes();
   if(t==="swing")loadSwing();
   if(t==="chart")requestAnimationFrame(draw);
   if(t==="news"&&current&&(newsFor!==current||Date.now()-newsAt>300000))loadNews();
 }
 document.querySelectorAll(".tabbar [role=tab]").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $("tab-chart").parentElement.querySelector(".tabbar").addEventListener("keydown",e=>{
-  if(!/^Arrow(Left|Right)$/.test(e.key))return;const order=["swing","chart","news","watch"];const i=order.indexOf(tab);
-  const n=order[(i+(e.key==="ArrowRight"?1:3))%4];setTab(n);$("t-"+n).focus()});
+  if(!/^Arrow(Left|Right)$/.test(e.key))return;const order=["swing","chart","news","watch","hold"];const i=order.indexOf(tab);
+  const n=order[(i+(e.key==="ArrowRight"?1:4))%5];setTab(n);$("t-"+n).focus()});
 
 // ---------- 종목명 검색 ----------
 const picked={};try{Object.assign(picked,JSON.parse(LS.get("chartSignal.names")||"{}"))}catch(_){}
@@ -756,6 +840,114 @@ $("slist").addEventListener("click",e=>{
   const op=e.target.closest("[data-open]");
   if(op){const code=op.dataset.open;picked[code]=op.dataset.name;LS.set("chartSignal.names",JSON.stringify(picked));$("symbol").value=op.dataset.name;setTab("chart");load(code);window.scrollTo({top:0,behavior:"smooth"})}
 });
+
+// ---------- 보유종목 ----------
+const HKEY="chartSignal.holdings";
+let holds=[];try{holds=JSON.parse(LS.get(HKEY)||"[]");if(!Array.isArray(holds))holds=[]}catch(_){holds=[]}
+let hrule={tp:5,sl:7};try{Object.assign(hrule,JSON.parse(LS.get("chartSignal.holdRule")||"{}"))}catch(_){}
+let quotes={};try{quotes=JSON.parse(LS.get("chartSignal.quotes")||"{}")}catch(_){quotes={}}
+const INDEX_ETF=new Set(["VOO","SPY","IVV","SPLG","VTI","QQQ","QQQM","DIA","SCHD","VT","VEA","VXUS","ACWI","RSP","MAGS"]);
+const LEVERAGED=new Set(["SOXL","TQQQ","UPRO","SPXL","TECL","FNGU","NVDL","TSLL","SQQQ","SOXS","LABU","BULZ","USD","SSO","QLD"]);
+const M7SET=new Set(["AAPL","MSFT","GOOGL","GOOG","AMZN","META","NVDA","TSLA"]);
+const saveHolds=()=>LS.set(HKEY,JSON.stringify(holds));
+function groupOf(sym){if(INDEX_ETF.has(sym)||/^(069500|102110|360750|133690|379800|381170)$/.test(sym))return"idx";if(LEVERAGED.has(sym))return"lev";if(M7SET.has(sym))return"m7";return"exit"}
+const GROUP_LABEL={idx:"지수 · 계속 모으기",m7:"M7",exit:"M7 외 · 정리 대상",lev:"레버리지 · 따로 결정"};
+$("htp").value=hrule.tp;$("hsl").value=hrule.sl;
+["htp","hsl"].forEach(id=>$(id).addEventListener("change",()=>{const v=parseFloat($(id).value);if(v>0){hrule[id==="htp"?"tp":"sl"]=v;LS.set("chartSignal.holdRule",JSON.stringify(hrule));renderHolds()}}));
+function cur(h,q){return q&&q.currency==="KRW"||/^\d{6}$/.test(h.sym)?"KRW":"USD"}
+function evalHold(h){
+  const q=quotes[h.sym];const g=groupOf(h.sym);const tp=h.tp>0?h.tp:hrule.tp,sl=h.sl>0?h.sl:hrule.sl;
+  const price=q?q.price:null;const pl=price!=null?(price/h.avg-1)*100:null;
+  const tpPrice=h.avg*(1+tp/100),slPrice=h.avg*(1-sl/100);
+  let act=null;if(g!=="idx"&&price!=null){if(price>=tpPrice)act="tp";else if(price<=slPrice)act="sl"}
+  return{q,g,tp,sl,price,pl,tpPrice,slPrice,act,value:price!=null?price*h.qty:null,cost:h.avg*h.qty,currency:cur(h,q)};
+}
+function renderHolds(){
+  $("holdCount").textContent=holds.length||"";$("hempty").hidden=holds.length>0;
+  const ev=holds.map(h=>({h,e:evalHold(h)}));
+  const rank={tp:0,sl:1};ev.sort((a,b)=>(rank[a.e.act]??2)-(rank[b.e.act]??2)||(a.e.g==="idx")-(b.e.g==="idx")||Math.abs((a.e.price||0)/(a.e.tpPrice||1)-1)-Math.abs((b.e.price||0)/(b.e.tpPrice||1)-1));
+  // summary (USD only; KRW separately)
+  const sums={};ev.forEach(({e})=>{const c=e.currency;sums[c]=sums[c]||{v:0,c:0,n:0};if(e.value!=null){sums[c].v+=e.value;sums[c].c+=e.cost;sums[c].n++}});
+  const hitTp=ev.filter(x=>x.e.act==="tp").length,hitSl=ev.filter(x=>x.e.act==="sl").length;
+  const sumHtml=Object.entries(sums).filter(([,x])=>x.n).map(([c,x])=>{const p=(x.v/x.c-1)*100;const d=x.v-x.c;
+    return`<div class="hstat"><span class="label">${c==="USD"?"달러 자산":"원화 자산"}</span><b>${c==="USD"?"$":""}${money(x.v,c)}${c==="KRW"?"원":""}</b><span class="${d>0?"pos":d<0?"neg":"neu"}">${d>0?"+":""}${money(Math.abs(d)*(d<0?-1:1),c)} (${pct(p)})</span></div>`}).join("");
+  $("hstats").innerHTML=sumHtml+`<div class="hstat"><span class="label">매도 시점</span><b class="${hitTp?"pos":"neu"}">${hitTp}종목</b><span>익절가 도달</span></div><div class="hstat"><span class="label">손절 시점</span><b class="${hitSl?"neg":"neu"}">${hitSl}종목</b><span>손절가 도달</span></div>`;
+  $("hlist").innerHTML=ev.map(({h,e})=>{
+    const c=e.currency;const name=h.name||(e.q&&e.q.name)||h.sym;
+    const plHtml=e.price!=null?`<b>${money(e.price,c)}</b><span class="${e.pl>0?"pos":e.pl<0?"neg":"neu"}">${pct(e.pl)} · ${e.pl>=0?"+":"−"}${money(Math.abs(e.price-h.avg)*h.qty,c)}</span>`:`<b>—</b><span class="neu">현재가 대기</span>`;
+    let body="";
+    if(e.g==="idx"){body=`<div class="hnote">계속 모으는 지수라 매도가를 두지 않습니다. 평균단가 ${money(h.avg,c)} · ${h.qty}주</div>`}
+    else{
+      const lo=e.slPrice,hi=e.tpPrice;const posOf=x=>Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+      const toTp=e.price!=null?(e.tpPrice/e.price-1)*100:null,toSl=e.price!=null?(e.slPrice/e.price-1)*100:null;
+      body=`<div><div class="hbar" aria-hidden="true"><u style="left:${posOf(h.avg)}%"></u>${e.price!=null?`<i style="left:${posOf(e.price)}%"></i>`:""}</div>
+        <div class="hlv"><span class="neg">손절 ${money(e.slPrice,c)}${toSl!=null?` (${pct(toSl)})`:""}</span><span class="neu">평균 ${money(h.avg,c)}</span><span class="pos">익절 ${money(e.tpPrice,c)}${toTp!=null?` (${pct(toTp)})`:""}</span></div></div>`;
+      if(e.g==="lev")body+=`<div class="hnote">3배 레버리지 상품입니다. ${e.price!=null&&e.price<h.avg?`본전까지 ${pct((h.avg/e.price-1)*100)} 올라야 합니다. `:""}"오늘 현금이라면 새로 사겠는가?"로 따로 판단하세요.</div>`;
+      if(e.g==="exit")body+=`<div class="hnote">M7 밖 종목이라 익절가에 닿거나 정해둔 기한이 지나면 정리하는 대상입니다.</div>`;
+    }
+    const act=e.act==="tp"?`<span class="hact tp">익절가 도달 · 매도 시점</span>`:e.act==="sl"?`<span class="hact sl">손절가 도달 · 손절 시점</span>`:"";
+    return`<li class="panel hcard ${e.act?"hit-"+e.act:""}">
+      <div class="hhead"><div class="hname"><b>${esc(name)}</b><span class="meta">${esc(h.sym)} · ${h.qty}주<span class="tag ${e.g}">${GROUP_LABEL[e.g]}</span>${e.g!=="idx"?`<span>익절 +${e.tp}% / 손절 −${e.sl}%</span>`:""}</span>${act}</div><div class="hpl">${plHtml}</div></div>
+      ${body}
+      <div class="hfoot"><button type="button" class="btn sm" data-hchart="${esc(h.sym)}" data-name="${esc(name)}">차트·뉴스</button><button type="button" class="btn sm" data-hedit="${esc(h.sym)}">수정</button><button type="button" class="btn sm" data-hdel="${esc(h.sym)}">삭제</button></div>
+    </li>`}).join("");
+  // orders text
+  const lines=ev.filter(({e})=>e.g!=="idx").map(({h,e})=>{const c=e.currency;const name=h.name||(e.q&&e.q.name)||h.sym;
+    return`${h.sym.padEnd(6)} ${String(h.qty).padStart(3)}주  익절 지정가 ${money(e.tpPrice,c).padStart(9)}  손절 ${money(e.slPrice,c).padStart(9)}  (${name})`});
+  $("horders").hidden=!lines.length;$("hordertext").textContent=lines.join("\n");
+}
+async function loadQuotes(){
+  if(!holds.length){renderHolds();return}
+  $("hstatus").className="sstatus";$("hstatus").textContent="현재가를 불러오는 중…";
+  const syms=holds.map(h=>h.sym);
+  try{
+    const res=await fetch(`${apiBase()}/api/quotes?symbols=${encodeURIComponent(syms.join(","))}&_=${Date.now()}`,{cache:"no-store"});
+    if(res.status===404)throw new Error("old");
+    const d=await res.json();if(!res.ok)throw new Error(d.error||"서버 오류");
+    Object.assign(quotes,d.quotes||{});
+  }catch(e){
+    if(e.message!=="old"&&!/Failed to fetch|NetworkError|Load failed|abort/i.test(e.message)){ $("hstatus").className="sstatus err";$("hstatus").textContent=e.message;renderHolds();return}
+    // 예전 서버이면 종목별로 가져옵니다
+    await Promise.all(syms.map(async s=>{try{const d=await fetchData(s);const b=d.bars;const c=+b[b.length-1].c,p=+b[b.length-2].c;
+      quotes[s]={symbol:d.symbol,name:d.name,price:c,prev:p,chg:(c/p-1)*100,date:b[b.length-1].t,currency:d.currency||(/\.(KS|KQ)$/.test(d.symbol)?"KRW":"USD")}}catch(_){}}));
+  }
+  LS.set("chartSignal.quotes",JSON.stringify(quotes));
+  const missing=syms.filter(s=>!quotes[s]);
+  const dt=Object.values(quotes).map(q=>q.date).sort().pop();
+  $("hstatus").className="sstatus"+(missing.length?" err":"");
+  $("hstatus").textContent=missing.length?`${missing.join(", ")} 현재가를 찾지 못했습니다. 티커를 확인해 주세요.`:`${dt||""} 기준 · ${new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})} 갱신 · 화면을 켜두면 1분마다 갱신`;
+  renderHolds();
+}
+$("hrefresh").onclick=loadQuotes;
+setInterval(()=>{if(tab==="hold"&&document.visibilityState==="visible")loadQuotes()},60000);
+function upsertHold(h){const i=holds.findIndex(x=>x.sym===h.sym);if(i>=0)holds[i]={...holds[i],...h};else holds.push(h);saveHolds()}
+$("hform").addEventListener("submit",e=>{e.preventDefault();
+  const sym=$("hsym").value.trim().toUpperCase().replace(/\.(KS|KQ)$/,""),qty=parseFloat($("hqty").value),avg=parseFloat($("havg").value);
+  if(!sym||!(qty>0)||!(avg>0)){$("hstatus").className="sstatus err";$("hstatus").textContent="티커, 수량, 평균단가를 모두 넣어주세요.";return}
+  const tp=parseFloat($("htp1").value),sl=parseFloat($("hsl1").value);
+  upsertHold({sym,qty,avg,tp:tp>0?tp:null,sl:sl>0?sl:null,name:picked[sym]||undefined});
+  $("hform").reset();$("hstatus").className="sstatus";$("hstatus").textContent=`${sym}을(를) 저장했습니다.`;renderHolds();loadQuotes()});
+$("hbulkgo").onclick=()=>{
+  const rows=[];const bad=[];
+  $("hbulk").value.split(/\n/).map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    const tok=l.replace(/[,|$]/g," ").split(/\s+/).filter(Boolean);
+    const sym=(tok.find(t=>/^[A-Za-z][A-Za-z.\-]{0,9}$/.test(t)&&!/^(주|USD|KRW)$/i.test(t))||tok.find(t=>/^\d{6}$/.test(t))||"").toUpperCase();
+    const nums=tok.filter(t=>t!==sym&&/^\d+(\.\d+)?$/.test(t)&&!/^\d{6}$/.test(t)).map(Number);
+    if(sym&&nums.length>=2&&nums[0]>0&&nums[1]>0)rows.push({sym,qty:nums[0],avg:nums[1],tp:null,sl:null});else bad.push(l)});
+  if(!rows.length){$("hstatus").className="sstatus err";$("hstatus").textContent="읽을 수 있는 줄이 없습니다. 한 줄에 '티커 수량 평균단가' 순서로 넣어주세요.";return}
+  holds=rows;saveHolds();$("hbulk").value="";$("hedit").open=false;
+  $("hstatus").className="sstatus"+(bad.length?" err":"");$("hstatus").textContent=`${rows.length}종목을 저장했습니다.`+(bad.length?` 읽지 못한 줄: ${bad.join(" / ")}`:"");
+  renderHolds();loadQuotes();window.scrollTo({top:0,behavior:"smooth"})};
+$("hlist").addEventListener("click",e=>{
+  const ch=e.target.closest("[data-hchart]");if(ch){const code=ch.dataset.hchart;picked[code]=ch.dataset.name;$("symbol").value=ch.dataset.name;setTab("chart");load(code);window.scrollTo({top:0,behavior:"smooth"});return}
+  const ed=e.target.closest("[data-hedit]");if(ed){const h=holds.find(x=>x.sym===ed.dataset.hedit);if(!h)return;
+    $("hsym").value=h.sym;$("hqty").value=h.qty;$("havg").value=h.avg;$("htp1").value=h.tp||"";$("hsl1").value=h.sl||"";$("hedit").open=true;$("hedit").scrollIntoView({behavior:"smooth",block:"start"});$("hqty").focus();return}
+  const del=e.target.closest("[data-hdel]");if(del){
+    if(del.dataset.armed){holds=holds.filter(x=>x.sym!==del.dataset.hdel);saveHolds();renderHolds()}
+    else{del.dataset.armed="1";del.textContent="한 번 더 누르면 삭제";setTimeout(()=>{if(del.isConnected){delete del.dataset.armed;del.textContent="삭제"}},3000)}}
+});
+$("hcopy").onclick=async()=>{const t=$("hordertext").textContent;try{await navigator.clipboard.writeText(t);$("hcopy").textContent="복사됨"}catch(_){const r=document.createRange();r.selectNodeContents($("hordertext"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("hcopy").textContent="선택됨, 복사하세요"}setTimeout(()=>$("hcopy").textContent="복사",2000)};
+renderHolds();
 
 // ---------- 뉴스 ----------
 let newsFor=null,newsAt=0,newsSeq=0;
