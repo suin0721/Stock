@@ -1,0 +1,80 @@
+name: Portfolio backtest report
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install yfinance pandas numpy
+      - name: Backtest equal-weight portfolios in KRW
+        run: |
+          mkdir -p report
+          python - <<'PY'
+          import json, numpy as np, pandas as pd, yfinance as yf
+          tick = {"005930.KS": "삼성전자", "VOO": "S&P500(VOO)", "KO": "코카콜라", "XLP": "미국 필수소비재 ETF",
+                  "090430.KS": "아모레퍼시픽", "000100.KS": "유한양행", "069500.KS": "KODEX 200", "KRW=X": "원달러"}
+          px = yf.download(list(tick), start="2015-10-01", interval="1d", auto_adjust=True, progress=False)["Close"]
+          px = px.ffill().dropna()
+          fx = px["KRW=X"]
+          krw = pd.DataFrame({t: (px[t] * fx if not t.endswith(".KS") else px[t]) for t in tick if t != "KRW=X"})
+          m = krw.resample("ME").last().dropna()
+          rets = m.pct_change().dropna()
+          def run(weights, rebalance="Y"):
+              w = pd.Series(weights, dtype=float); w = w / w.sum()
+              val, hold, out = 1.0, w.copy(), []
+              for i, (d, r) in enumerate(rets[w.index].iterrows()):
+                  hold = hold * (1 + r)
+                  val = hold.sum()
+                  out.append((d, val))
+                  if rebalance == "Y" and d.month == 12:
+                      hold = w * val
+              s = pd.Series(dict(out))
+              yrs = (s.index[-1] - s.index[0]).days / 365.25
+              cagr = s.iloc[-1] ** (1 / yrs) - 1
+              dd = (s / s.cummax() - 1).min()
+              vol = s.pct_change().dropna().std() * np.sqrt(12)
+              yearly = s.resample("YE").last().pct_change().dropna()
+              first = s.resample("YE").last().iloc[0] - 1
+              worst = min(yearly.min(), first)
+              return {"cagr": round(cagr * 100, 2), "total": round((s.iloc[-1] - 1) * 100, 1), "maxDD": round(dd * 100, 1),
+                      "vol": round(vol * 100, 1), "worstYear": round(worst * 100, 1),
+                      "start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")}
+          ports = {
+            "삼성:VOO:코카콜라 1:1:1": {"005930.KS": 1, "VOO": 1, "KO": 1},
+            "삼성:VOO:필수소비재ETF 1:1:1": {"005930.KS": 1, "VOO": 1, "XLP": 1},
+            "삼성:VOO:아모레퍼시픽 1:1:1": {"005930.KS": 1, "VOO": 1, "090430.KS": 1},
+            "삼성:VOO:유한양행 1:1:1": {"005930.KS": 1, "VOO": 1, "000100.KS": 1},
+            "삼성:코스피200:코카콜라 1:1:1": {"005930.KS": 1, "069500.KS": 1, "KO": 1},
+            "삼성:VOO:코카콜라 1:2:1": {"005930.KS": 1, "VOO": 2, "KO": 1},
+            "VOO 100%": {"VOO": 1},
+            "삼성전자 100%": {"005930.KS": 1},
+            "코카콜라 100%": {"KO": 1},
+            "아모레퍼시픽 100%": {"090430.KS": 1},
+            "유한양행 100%": {"000100.KS": 1},
+            "KODEX 200 100%": {"069500.KS": 1},
+          }
+          res = {k: run(v) for k, v in ports.items()}
+          corr = rets[["005930.KS", "VOO", "KO", "XLP", "090430.KS", "000100.KS", "069500.KS"]].corr().round(2)
+          json.dump({"results": res, "corr": corr.to_dict()}, open("report/portfolio.json", "w"), ensure_ascii=False, indent=1)
+          PY
+      - name: Save to branch
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          cp -r report /tmp/report
+          git checkout --orphan pf-tmp
+          git rm -rf --cached . >/dev/null
+          rm -rf ./*
+          cp /tmp/report/* .
+          git add -f portfolio.json
+          git commit -m "portfolio report"
+          git push -f origin pf-tmp:portfolio-report
